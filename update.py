@@ -5,22 +5,27 @@ import re
 import urllib.request
 import urllib.parse
 
+# 扩展涵盖全球财经、美联储、股市指数与地缘政治的权威 RSS 源
 FEEDS = {
-    "White House (白宫官方)": "https://www.whitehouse.gov/briefings-statements/feed/",
-    "UN News (联合国)": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
-    "UK Government (英国政府)": "https://www.gov.uk/government/announcements.atom",
-    "European Commission (欧盟委员会)": "https://ec.europa.eu/commission/presscorner/api/rss?language=en",
-    "Kremlin (克里姆林宫)": "http://en.kremlin.ru/events/news/rss",
-    "Reuters (路透社)": "https://rsshub.app/reuters/world",
-    "Associated Press (美联社)": "https://rsshub.app/apnews/topics/world-news",
-    "BBC World (BBC新闻)": "http://feeds.bbci.co.uk/news/world/rss.xml",
-    "Wall Street Journal (华尔街日报)": "https://feeds.a.dj.com/rss/RSSWorldNews.xml",
-    "New York Times (纽约时报)": "https://rsshub.app/nyt/world",
-    "CNN World (CNN)": "http://rss.cnn.com/rss/cnn_world.rss",
-    "Bloomberg (彭博社)": "https://rsshub.app/bloomberg",
-    "Al Jazeera (半岛电视台)": "https://www.aljazeera.com/xml/rss/all.xml",
-    "Lianhe Zaobao (联合早报)": "https://www.zaobao.com.sg/rss/sea",
-    "Asahi Shimbun (朝日新闻)": "https://www.asahi.com/rss/asahi/news.rdf"
+    "美联储官方发布 (Federal Reserve)": "https://www.federalreserve.gov/feeds/press_all.xml",
+    "CNBC 市场与财经 (CNBC Markets)": "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    "华尔街日报市场 (WSJ Markets)": "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",
+    "金融时报全球头条 (Financial Times)": "https://www.ft.com/rss/home/international",
+    "路透社财经与市场 (Reuters Business)": "https://rsshub.app/reuters/business",
+    "彭博社财经 (Bloomberg)": "https://rsshub.app/bloomberg",
+    "白宫官方 (White House)": "https://www.whitehouse.gov/briefings-statements/feed/",
+    "联合国新闻 (UN News)": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+    "英国政府公告 (UK Gov)": "https://www.gov.uk/government/announcements.atom",
+    "欧盟委员会 (EU Commission)": "https://ec.europa.eu/commission/presscorner/api/rss?language=en",
+    "克里姆林宫 (Kremlin)": "http://en.kremlin.ru/events/news/rss",
+    "路透社全球要闻 (Reuters World)": "https://rsshub.app/reuters/world",
+    "美联社 (AP News)": "https://rsshub.app/apnews/topics/world-news",
+    "BBC 世界新闻 (BBC World)": "http://feeds.bbci.co.uk/news/world/rss.xml",
+    "纽约时报世界 (NYT World)": "https://rsshub.app/nyt/world",
+    "CNN 全球新闻 (CNN World)": "http://rss.cnn.com/rss/cnn_world.rss",
+    "半岛电视台 (Al Jazeera)": "https://www.aljazeera.com/xml/rss/all.xml",
+    "联合早报 (Lianhe Zaobao)": "https://www.zaobao.com.sg/rss/sea",
+    "朝日新闻 (Asahi Shimbun)": "https://www.asahi.com/rss/asahi/news.rdf"
 }
 
 def translate_to_zh(text):
@@ -42,7 +47,7 @@ def translate_to_zh(text):
 
 def fetch_news():
     items = []
-    current_year = 2026  # 当前年份
+    current_year = 2026
     
     for source_name, url in FEEDS.items():
         try:
@@ -50,18 +55,16 @@ def fetch_news():
             feed = feedparser.parse(url)
             count = 0
             for entry in feed.entries:
-                if count >= 5:  # 每个源最多取最新的5条，增加总条目数
+                if count >= 5:
                     break
                 
                 published = entry.get('published_parsed') or entry.get('updated_parsed')
                 if published:
                     pub_time = datetime(*published[:6])
-                    # 严格过滤掉 2026 年以前的所有陈旧归档文章
                     if pub_time.year < current_year:
                         continue
                     pub_time_str = pub_time.strftime('%Y-%m-%d %H:%M')
                 else:
-                    # 如果 RSS 没有明确时间，则标记为当前时间或跳过，防止虚假旧时间
                     pub_time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
                 
                 title = entry.get('title', 'No Title')
@@ -84,7 +87,6 @@ def fetch_news():
         except Exception as e:
             print(f"抓取 {source_name} 失败: {e}")
 
-    # 严格按时间降序排序，最新的排在最前面
     items.sort(key=lambda x: x['time'], reverse=True)
     return items
 
@@ -96,7 +98,7 @@ def generate_html(items):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球政要与主流媒体全景实时看板</title>
+    <title>全球政经与金融头条实时看板</title>
     <style>
         :root {{
             --bg-color: #f4f6f9;
@@ -138,8 +140,8 @@ def generate_html(items):
 <body>
     <div class="container">
         <header>
-            <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>已启用 2026 最新资讯过滤与简体中文翻译</p>
+            <h1>📈 全球政经、美联储与金融头条全景看板</h1>
+            <p>已整合美联储、股市财金及地缘头条，实时简体中文更新</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
@@ -213,4 +215,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已完成严格过滤！")
+    print("看板生成成功，已成功增加财经与美联储等头条源！")
