@@ -5,7 +5,6 @@ import re
 import urllib.request
 import urllib.parse
 
-# 仅保留稳定、高频更新的官方新闻与主流媒体源
 FEEDS = {
     "White House (白宫官方)": "https://www.whitehouse.gov/briefings-statements/feed/",
     "UN News (联合国)": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
@@ -39,11 +38,11 @@ def translate_to_zh(text):
                     return translated
     except Exception:
         pass
-    return text  # 翻译失败时返回原文，保证程序不中断
+    return text
 
 def fetch_news():
     items = []
-    current_year = datetime.now().year
+    current_year = 2026  # 当前年份
     
     for source_name, url in FEEDS.items():
         try:
@@ -51,17 +50,18 @@ def fetch_news():
             feed = feedparser.parse(url)
             count = 0
             for entry in feed.entries:
-                if count >= 3:  # 每个源最多取最新的3条
+                if count >= 5:  # 每个源最多取最新的5条，增加总条目数
                     break
                 
                 published = entry.get('published_parsed') or entry.get('updated_parsed')
                 if published:
                     pub_time = datetime(*published[:6])
-                    # 过滤掉非当前或去年的陈旧脏数据（防止出现几年前的假新闻）
-                    if pub_time.year < current_year - 1:
+                    # 严格过滤掉 2026 年以前的所有陈旧归档文章
+                    if pub_time.year < current_year:
                         continue
                     pub_time_str = pub_time.strftime('%Y-%m-%d %H:%M')
                 else:
+                    # 如果 RSS 没有明确时间，则标记为当前时间或跳过，防止虚假旧时间
                     pub_time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
                 
                 title = entry.get('title', 'No Title')
@@ -70,7 +70,6 @@ def fetch_news():
                 summary = entry.get('summary', entry.get('description', ''))
                 summary = re.sub('<[^<]+?>', '', summary)[:150]
 
-                # 后端实时转换为简体中文
                 zh_title = translate_to_zh(title)
                 zh_summary = translate_to_zh(summary)
 
@@ -85,7 +84,7 @@ def fetch_news():
         except Exception as e:
             print(f"抓取 {source_name} 失败: {e}")
 
-    # 按时间降序排序
+    # 严格按时间降序排序，最新的排在最前面
     items.sort(key=lambda x: x['time'], reverse=True)
     return items
 
@@ -140,7 +139,7 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>实时抓取官方 RSS 并过滤陈旧内容 (滚动加载)</p>
+            <p>已启用 2026 最新资讯过滤与简体中文翻译</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
@@ -214,4 +213,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已完成翻译过滤并写入 index.html！")
+    print("看板生成成功，已完成严格过滤！")
