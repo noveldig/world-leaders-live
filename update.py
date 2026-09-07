@@ -65,14 +65,14 @@ def generate_html(items):
     cards_html = ""
     for index, item in enumerate(items):
         cards_html += f"""
-        <div class="news-card" data-index="{index}">
+        <div class="news-card">
             <div class="card-header">
                 <span class="badge">{item['source']}</span>
                 <span class="time">{item['time']}</span>
             </div>
             <h2><a href="{item['link']}" target="_blank" class="news-title" data-original="{item['title']}">{item['title']}</a></h2>
             <p class="summary" data-original="{item['summary']}">{item['summary']}...</p>
-            <a href="{item['link']}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag">🔄 异步处理中...</span></a>
+            <a href="{item['link']}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag">🔄 异步翻译中...</span></a>
         </div>
         """
 
@@ -125,43 +125,67 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>汇聚全球元首动态与顶级媒体 <span id="trans-status" style="color: #3498db;">(正在安全加载...)</span></p>
+            <p>汇聚全球元首动态与顶级媒体 <span id="trans-status" style="color: #3498db;">(正在智能队列异步翻译...)</span></p>
         </header>
         <div class="news-list" id="news-container">
             {cards_html}
         </div>
-        <footer><p>Powered by GitHub Actions & Robust Frontend Engine</p></footer>
+        <footer><p>Powered by GitHub Actions & Multi-Engine Async Translation</p></footer>
     </div>
 
     <script>
-        async function translateText(text) {{
-            if (!text) return "";
+        // 多翻译引擎轮询函数，带有严格的 HTML 拦截与防崩保护
+        async function translateWithEngine(text, engineType) {{
             try {{
-                const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=en|zh`;
-                const response = await fetch(url);
-                const textResponse = await response.text();
-                
-                // 严密检查：如果返回的内容开头是 '<'（说明遇到了 HTML 错误页或风控拦截），直接放弃解析
-                if (textResponse.trim().startsWith('<')) {{
-                    return text;
+                let url = "";
+                if (engineType === 'mymemory') {{
+                    url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=en|zh`;
+                }} else if (engineType === 'libre') {{
+                    url = `https://libretranslate.com/translate`;
+                    const res = await fetch(url, {{
+                        method: "POST",
+                        body: JSON.stringify({{ q: text, source: "en", target: "zh" }}),
+                        headers: {{ "Content-Type": "application/json" }}
+                    }});
+                    const json = await res.json();
+                    return json.translatedText || null;
                 }}
+
+                const response = await fetch(url);
+                const textResp = await response.text();
                 
-                const data = JSON.parse(textResponse);
-                if (data && data.responseData && data.responseData.translatedText) {{
+                // 如果返回 HTML（说明被拦截或限流），直接视为失败
+                if (textResp.trim().startsWith('<')) return null;
+
+                const data = JSON.parse(textResp);
+                if (engineType === 'mymemory' && data && data.responseData && data.responseData.translatedText) {{
                     let translated = data.responseData.translatedText;
                     if (!translated.includes("MYMEMORY WARNING")) {{
                         return translated;
                     }}
                 }}
             }} catch (e) {{
-                // 任何网络或解析异常静默捕获，绝不报错崩塌
+                // 引擎异常静默
             }}
-            return text;
+            return null;
+        }}
+
+        async function safeTranslate(text) {{
+            if (!text) return "";
+            // 依次尝试多个翻译源
+            let result = await translateWithEngine(text, 'mymemory');
+            if (result) return result;
+
+            result = await translateWithEngine(text, 'libre');
+            if (result) return result;
+
+            return text; // 所有源失败则优雅降级保留英文
         }}
 
         async function render() {{
             const cards = document.querySelectorAll('.news-card');
             
+            // 采用串行加延时（队列）的方式进行翻译，拉长请求间隔，彻底避免并发过高触发封锁
             for (let card of cards) {{
                 const titleEl = card.querySelector('.news-title');
                 const summaryEl = card.querySelector('.summary');
@@ -171,24 +195,26 @@ def generate_html(items):
                 const originalSummary = summaryEl.getAttribute('data-original');
 
                 try {{
-                    const [zhTitle, zhSummary] = await Promise.all([
-                        translateText(originalTitle),
-                        translateText(originalSummary)
-                    ]);
+                    const zhTitle = await safeTranslate(originalTitle);
+                    // 每次请求之间人为暂停 300 毫秒，拉长翻译间隔
+                    await new Promise(r => setTimeout(r, 300));
                     
+                    const zhSummary = await safeTranslate(originalSummary);
+                    await new Promise(r => setTimeout(r, 300));
+
                     if (zhTitle && zhTitle !== originalTitle) {{
                         titleEl.innerText = zhTitle;
                     }}
                     if (zhSummary && zhSummary !== originalSummary) {{
                         summaryEl.innerText = zhSummary + '...';
                     }}
-                    tagEl.innerText = "✅ 已同步";
+                    tagEl.innerText = "✅ 已智能译";
                     tagEl.style.color = "#27ae60";
                 }} catch (err) {{
-                    tagEl.innerText = "⚠️ 原文模式";
+                    tagEl.innerText = "⚠️ 保留原文";
                 }}
             }}
-            document.getElementById('trans-status').innerText = "(全部加载完成)";
+            document.getElementById('trans-status').innerText = "(多源智能异步翻译完成)";
         }}
 
         document.addEventListener('DOMContentLoaded', render);
@@ -203,4 +229,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已加入防 HTML 崩溃保护！")
+    print("看板生成成功，已集成多源轮询与拉长间隔机制！")
