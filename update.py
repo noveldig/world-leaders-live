@@ -105,7 +105,6 @@ def generate_html(items):
         h2 a:hover {{ color: var(--accent); }}
         .summary {{ font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 12px; }}
         .read-more {{ font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }}
-        .translating-tag {{ font-size: 11px; color: #e67e22; margin-left: 8px; font-weight: normal; }}
         .load-more-btn {{
             display: block; width: 100%; padding: 14px; background-color: #fff; border: 1px solid #cbd5e0;
             border-radius: 10px; text-align: center; font-size: 15px; font-weight: 600; color: #3182ce;
@@ -119,39 +118,19 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>已启用分页流式加载与智能翻译 <span id="trans-status" style="color: #3498db;">(按需加载)</span></p>
+            <p>已启用极速分页流式加载 (无外部请求)</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <button id="load-btn" class="load-more-btn" onclick="loadMore()">加载更多资讯 (&darr;)</button>
-        <footer><p>Powered by GitHub Actions & Paginated Async Translation</p></footer>
+        <footer><p>Powered by GitHub Actions & Pure Static Render</p></footer>
     </div>
 
     <script>
         const allData = {items_json};
         let currentIndex = 0;
-        const pageSize = 10; // 每次只加载 10 条，保护翻译通道
+        const pageSize = 10; // 每次加载 10 条
 
-        async function translateText(text) {{
-            if (!text) return "";
-            try {{
-                const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=en|zh`;
-                const response = await fetch(url);
-                const textResp = await response.text();
-                
-                if (textResp.trim().startsWith('<')) return text; // 拦截 HTML 错误页
-
-                const data = JSON.parse(textResp);
-                if (data && data.responseData && data.responseData.translatedText) {{
-                    let translated = data.responseData.translatedText;
-                    if (!translated.includes("MYMEMORY WARNING")) {{
-                        return translated;
-                    }}
-                }}
-            }} catch (e) {{}}
-            return text;
-        }}
-
-        async function loadMore() {{
+        function loadMore() {{
             const container = document.getElementById('news-container');
             const btn = document.getElementById('load-btn');
             
@@ -162,66 +141,35 @@ def generate_html(items):
                 return;
             }}
 
-            btn.innerText = "🔄 正在加载并异步翻译下一批...";
-            
             const nextEnd = Math.min(currentIndex + pageSize, allData.length);
             const batch = allData.slice(currentIndex, nextEnd);
             
             let batchHtml = '';
-            let batchStartIndex = currentIndex;
-
-            batch.forEach((item, idx) => {{
-                const globalIdx = batchStartIndex + idx;
+            batch.forEach((item) => {{
                 batchHtml += `
-                <div class="news-card" id="card-${{globalIdx}}">
+                <div class="news-card">
                     <div class="card-header">
                         <span class="badge">${{item.source}}</span>
                         <span class="time">${{item.time}}</span>
                     </div>
-                    <h2><a href="${{item.link}}" target="_blank" id="title-${{globalIdx}}">${{item.title}}</a></h2>
-                    <p class="summary" id="summary-${{globalIdx}}">${{item.summary}}...</p>
-                    <a href="${{item.link}}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag" id="tag-${{globalIdx}}">🔄 翻译中...</span></a>
+                    <h2><a href="${{item.link}}" target="_blank">${{item.title}}</a></h2>
+                    <p class="summary">${{item.summary}}...</p>
+                    <a href="${{item.link}}" target="_blank" class="read-more">阅读原文 &rarr;</a>
                 </div>
                 `;
             }});
 
             container.insertAdjacentHTML('beforeend', batchHtml);
-
-            // 逐条对当前批次进行安全翻译，并留出安全时间间隔
-            for (let i = 0; i < batch.length; i++) {{
-                const globalIdx = batchStartIndex + i;
-                const item = batch[i];
-
-                try {{
-                    const zhTitle = await translateText(item.title);
-                    await new Promise(r => setTimeout(r, 200)); // 200ms 缓冲间隔
-                    const zhSummary = await translateText(item.summary);
-                    await new Promise(r => setTimeout(r, 200));
-
-                    if (zhTitle && zhTitle !== item.title) {{
-                        document.getElementById(`title-${{globalIdx}}`).innerText = zhTitle;
-                    }}
-                    if (zhSummary && zhSummary !== item.summary) {{
-                        document.getElementById(`summary-${{globalIdx}}`).innerText = zhSummary + '...';
-                    }}
-                    document.getElementById(`tag-${{globalIdx}}`).innerText = "✅ 已译";
-                    document.getElementById(`tag-${{globalIdx}}`).style.color = "#27ae60";
-                }} catch (err) {{
-                    document.getElementById(`tag-${{globalIdx}}`).innerText = "⚠️ 原文";
-                }}
-            }}
-
             currentIndex = nextEnd;
+
             if (currentIndex >= allData.length) {{
                 btn.innerText = "已加载全部资讯";
                 btn.style.opacity = "0.6";
                 btn.style.pointerEvents = "none";
-            }} else {{
-                btn.innerText = "加载更多资讯 (&darr;)";
             }}
         }}
 
-        // 页面首次打开时自动加载第一页（10条）
+        // 页面首次打开自动加载第一页
         document.addEventListener('DOMContentLoaded', loadMore);
     </script>
 </body>
@@ -234,4 +182,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已成功升级为分页流式加载模式！")
+    print("看板生成成功，已完全去除翻译逻辑！")
