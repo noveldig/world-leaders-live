@@ -2,6 +2,8 @@ import feedparser
 from datetime import datetime
 import json
 import re
+import urllib.request
+import urllib.parse
 
 FEEDS = {
     "White House (白宫官方)": "https://www.whitehouse.gov/briefings-statements/feed/",
@@ -29,11 +31,28 @@ FEEDS = {
     "Asahi Shimbun (朝日新闻)": "https://www.asahi.com/rss/asahi/news.rdf"
 }
 
+def translate_to_zh(text):
+    if not text or re.match(r'^[\u4e00-\u9fa5]+$', text):
+        return text
+    try:
+        encoded_text = urllib.parse.quote(text[:500]) # 限制单次长度防止溢出
+        url = f"https://api.mymemory.translated.net/get?q={encoded_text}&langpair=en|zh-CN"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data and 'responseData' in data and data['responseData']['translatedText']:
+                translated = data['responseData']['translatedText']
+                if "INVALID KEY" not in translated and "QUOTA" not in translated:
+                    return translated
+    except Exception as e:
+        print(f"翻译出错: {e}")
+    return text  # 失败则降级返回原文
+
 def fetch_news():
     items = []
     for source_name, url in FEEDS.items():
         try:
-            print(f"正在抓取: {source_name}...")
+            print(f"正在抓取并翻译: {source_name}...")
             feed = feedparser.parse(url)
             for entry in feed.entries[:2]:
                 title = entry.get('title', 'No Title')
@@ -48,10 +67,14 @@ def fetch_news():
                 summary = entry.get('summary', entry.get('description', ''))
                 summary = re.sub('<[^<]+?>', '', summary)[:180]
 
+                # 后端直接转换为简体中文
+                zh_title = translate_to_zh(title)
+                zh_summary = translate_to_zh(summary)
+
                 items.append({
                     "source": source_name,
-                    "title": title,
-                    "summary": summary,
+                    "title": zh_title,
+                    "summary": zh_summary,
                     "link": link,
                     "time": pub_time
                 })
@@ -112,11 +135,11 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>已启用极速分页滚动加载 (无外部请求)</p>
+            <p>已自动转换为简体中文并启用滚动加载</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by GitHub Actions & Infinite Scroll</p></footer>
+        <footer><p>Powered by GitHub Actions & Python Translation Engine</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -186,4 +209,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已成功写入 index.html！")
+    print("看板生成成功，已全部翻译为简体中文并写入 index.html！")
