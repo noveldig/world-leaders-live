@@ -62,19 +62,7 @@ def fetch_news():
     return items
 
 def generate_html(items):
-    cards_html = ""
-    for index, item in enumerate(items):
-        cards_html += f"""
-        <div class="news-card">
-            <div class="card-header">
-                <span class="badge">{item['source']}</span>
-                <span class="time">{item['time']}</span>
-            </div>
-            <h2><a href="{item['link']}" target="_blank" class="news-title" data-original="{item['title']}">{item['title']}</a></h2>
-            <p class="summary" data-original="{item['summary']}">{item['summary']}...</p>
-            <a href="{item['link']}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag">🔄 异步翻译中...</span></a>
-        </div>
-        """
+    items_json = json.dumps(items, ensure_ascii=False)
 
     html_content = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -118,6 +106,12 @@ def generate_html(items):
         .summary {{ font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 12px; }}
         .read-more {{ font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }}
         .translating-tag {{ font-size: 11px; color: #e67e22; margin-left: 8px; font-weight: normal; }}
+        .load-more-btn {{
+            display: block; width: 100%; padding: 14px; background-color: #fff; border: 1px solid #cbd5e0;
+            border-radius: 10px; text-align: center; font-size: 15px; font-weight: 600; color: #3182ce;
+            cursor: pointer; margin: 30px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;
+        }}
+        .load-more-btn:hover {{ background-color: #ebf8ff; }}
         footer {{ text-align: center; margin-top: 40px; font-size: 12px; color: var(--text-muted); }}
     </style>
 </head>
@@ -125,99 +119,110 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>汇聚全球元首动态与顶级媒体 <span id="trans-status" style="color: #3498db;">(正在智能队列异步翻译...)</span></p>
+            <p>已启用分页流式加载与智能翻译 <span id="trans-status" style="color: #3498db;">(按需加载)</span></p>
         </header>
-        <div class="news-list" id="news-container">
-            {cards_html}
-        </div>
-        <footer><p>Powered by GitHub Actions & Multi-Engine Async Translation</p></footer>
+        <div class="news-list" id="news-container"></div>
+        <button id="load-btn" class="load-more-btn" onclick="loadMore()">加载更多资讯 (&darr;)</button>
+        <footer><p>Powered by GitHub Actions & Paginated Async Translation</p></footer>
     </div>
 
     <script>
-        // 多翻译引擎轮询函数，带有严格的 HTML 拦截与防崩保护
-        async function translateWithEngine(text, engineType) {{
-            try {{
-                let url = "";
-                if (engineType === 'mymemory') {{
-                    url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=en|zh`;
-                }} else if (engineType === 'libre') {{
-                    url = `https://libretranslate.com/translate`;
-                    const res = await fetch(url, {{
-                        method: "POST",
-                        body: JSON.stringify({{ q: text, source: "en", target: "zh" }}),
-                        headers: {{ "Content-Type": "application/json" }}
-                    }});
-                    const json = await res.json();
-                    return json.translatedText || null;
-                }}
+        const allData = {items_json};
+        let currentIndex = 0;
+        const pageSize = 10; // 每次只加载 10 条，保护翻译通道
 
+        async function translateText(text) {{
+            if (!text) return "";
+            try {{
+                const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=en|zh`;
                 const response = await fetch(url);
                 const textResp = await response.text();
                 
-                // 如果返回 HTML（说明被拦截或限流），直接视为失败
-                if (textResp.trim().startsWith('<')) return null;
+                if (textResp.trim().startsWith('<')) return text; // 拦截 HTML 错误页
 
                 const data = JSON.parse(textResp);
-                if (engineType === 'mymemory' && data && data.responseData && data.responseData.translatedText) {{
+                if (data && data.responseData && data.responseData.translatedText) {{
                     let translated = data.responseData.translatedText;
                     if (!translated.includes("MYMEMORY WARNING")) {{
                         return translated;
                     }}
                 }}
-            }} catch (e) {{
-                // 引擎异常静默
-            }}
-            return null;
+            }} catch (e) {{}}
+            return text;
         }}
 
-        async function safeTranslate(text) {{
-            if (!text) return "";
-            // 依次尝试多个翻译源
-            let result = await translateWithEngine(text, 'mymemory');
-            if (result) return result;
-
-            result = await translateWithEngine(text, 'libre');
-            if (result) return result;
-
-            return text; // 所有源失败则优雅降级保留英文
-        }}
-
-        async function render() {{
-            const cards = document.querySelectorAll('.news-card');
+        async function loadMore() {{
+            const container = document.getElementById('news-container');
+            const btn = document.getElementById('load-btn');
             
-            // 采用串行加延时（队列）的方式进行翻译，拉长请求间隔，彻底避免并发过高触发封锁
-            for (let card of cards) {{
-                const titleEl = card.querySelector('.news-title');
-                const summaryEl = card.querySelector('.summary');
-                const tagEl = card.querySelector('.translating-tag');
+            if (currentIndex >= allData.length) {{
+                btn.innerText = "已加载全部资讯";
+                btn.style.opacity = "0.6";
+                btn.style.pointerEvents = "none";
+                return;
+            }}
 
-                const originalTitle = titleEl.getAttribute('data-original');
-                const originalSummary = summaryEl.getAttribute('data-original');
+            btn.innerText = "🔄 正在加载并异步翻译下一批...";
+            
+            const nextEnd = Math.min(currentIndex + pageSize, allData.length);
+            const batch = allData.slice(currentIndex, nextEnd);
+            
+            let batchHtml = '';
+            let batchStartIndex = currentIndex;
+
+            batch.forEach((item, idx) => {{
+                const globalIdx = batchStartIndex + idx;
+                batchHtml += `
+                <div class="news-card" id="card-${{globalIdx}}">
+                    <div class="card-header">
+                        <span class="badge">${{item.source}}</span>
+                        <span class="time">${{item.time}}</span>
+                    </div>
+                    <h2><a href="${{item.link}}" target="_blank" id="title-${{globalIdx}}">${{item.title}}</a></h2>
+                    <p class="summary" id="summary-${{globalIdx}}">${{item.summary}}...</p>
+                    <a href="${{item.link}}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag" id="tag-${{globalIdx}}">🔄 翻译中...</span></a>
+                </div>
+                `;
+            }});
+
+            container.insertAdjacentHTML('beforeend', batchHtml);
+
+            // 逐条对当前批次进行安全翻译，并留出安全时间间隔
+            for (let i = 0; i < batch.length; i++) {{
+                const globalIdx = batchStartIndex + i;
+                const item = batch[i];
 
                 try {{
-                    const zhTitle = await safeTranslate(originalTitle);
-                    // 每次请求之间人为暂停 300 毫秒，拉长翻译间隔
-                    await new Promise(r => setTimeout(r, 300));
-                    
-                    const zhSummary = await safeTranslate(originalSummary);
-                    await new Promise(r => setTimeout(r, 300));
+                    const zhTitle = await translateText(item.title);
+                    await new Promise(r => setTimeout(r, 200)); // 200ms 缓冲间隔
+                    const zhSummary = await translateText(item.summary);
+                    await new Promise(r => setTimeout(r, 200));
 
-                    if (zhTitle && zhTitle !== originalTitle) {{
-                        titleEl.innerText = zhTitle;
+                    if (zhTitle && zhTitle !== item.title) {{
+                        document.getElementById(`title-${{globalIdx}}`).innerText = zhTitle;
                     }}
-                    if (zhSummary && zhSummary !== originalSummary) {{
-                        summaryEl.innerText = zhSummary + '...';
+                    if (zhSummary && zhSummary !== item.summary) {{
+                        document.getElementById(`summary-${{globalIdx}}`).innerText = zhSummary + '...';
                     }}
-                    tagEl.innerText = "✅ 已智能译";
-                    tagEl.style.color = "#27ae60";
+                    document.getElementById(`tag-${{globalIdx}}`).innerText = "✅ 已译";
+                    document.getElementById(`tag-${{globalIdx}}`).style.color = "#27ae60";
                 }} catch (err) {{
-                    tagEl.innerText = "⚠️ 保留原文";
+                    document.getElementById(`tag-${{globalIdx}}`).innerText = "⚠️ 原文";
                 }}
             }}
-            document.getElementById('trans-status').innerText = "(多源智能异步翻译完成)";
+
+            currentIndex = nextEnd;
+            if (currentIndex >= allData.length) {{
+                btn.innerText = "已加载全部资讯";
+                btn.style.opacity = "0.6";
+                btn.style.pointerEvents = "none";
+            }} else {{
+                btn.innerText = "加载更多资讯 (&darr;)";
+            }}
         }}
 
-        document.addEventListener('DOMContentLoaded', render);
+        // 页面首次打开时自动加载第一页（10条）
+        document.addEventListener('DOMContentLoaded', loadMore);
     </script>
 </body>
 </html>
@@ -229,4 +234,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已集成多源轮询与拉长间隔机制！")
+    print("看板生成成功，已成功升级为分页流式加载模式！")
