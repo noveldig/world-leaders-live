@@ -1,6 +1,5 @@
 import feedparser
 from datetime import datetime
-import html
 import json
 import re
 
@@ -63,7 +62,6 @@ def fetch_news():
     return items
 
 def generate_html(items):
-    # 使用 json.dumps 并转义标签防止脚本注入
     items_json = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
 
     html_content = f"""<!DOCTYPE html>
@@ -97,7 +95,6 @@ def generate_html(items):
             padding: 20px;
             margin-bottom: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
         }}
         .card-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }}
         .badge {{ background-color: #ebf8ff; color: #3182ce; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }}
@@ -107,12 +104,7 @@ def generate_html(items):
         h2 a:hover {{ color: var(--accent); }}
         .summary {{ font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 12px; }}
         .read-more {{ font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }}
-        .load-more-btn {{
-            display: block; width: 100%; padding: 14px; background-color: #fff; border: 1px solid #cbd5e0;
-            border-radius: 10px; text-align: center; font-size: 15px; font-weight: 600; color: #3182ce;
-            cursor: pointer; margin: 30px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: all 0.2s;
-        }}
-        .load-more-btn:hover {{ background-color: #ebf8ff; }}
+        .loading-status {{ text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px; }}
         footer {{ text-align: center; margin-top: 40px; font-size: 12px; color: var(--text-muted); }}
     </style>
 </head>
@@ -120,14 +112,13 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>已启用安全数据管道与分页流式加载</p>
+            <p>已启用极速分页滚动加载 (无外部请求)</p>
         </header>
         <div class="news-list" id="news-container"></div>
-        <button id="load-btn" class="load-more-btn" onclick="loadMore()">加载更多资讯 (&darr;)</button>
-        <footer><p>Powered by GitHub Actions & Safe JSON Payload</p></footer>
+        <div id="loading" class="loading-status">正在加载更多资讯...</div>
+        <footer><p>Powered by GitHub Actions & Infinite Scroll</p></footer>
     </div>
 
-    <!-- 采用标准的 application/json 标签隔离数据，杜绝一切 JS 语法崩溃 -->
     <script type="application/json" id="news-data">
     {items_json}
     </script>
@@ -142,15 +133,12 @@ def generate_html(items):
 
         let currentIndex = 0;
         const pageSize = 10;
+        const container = document.getElementById('news-container');
+        const loadingIndicator = document.getElementById('loading');
 
         function loadMore() {{
-            const container = document.getElementById('news-container');
-            const btn = document.getElementById('load-btn');
-            
             if (currentIndex >= allData.length) {{
-                btn.innerText = "已加载全部资讯";
-                btn.style.opacity = "0.6";
-                btn.style.pointerEvents = "none";
+                loadingIndicator.innerText = "已加载全部资讯";
                 return;
             }}
 
@@ -176,13 +164,17 @@ def generate_html(items):
             currentIndex = nextEnd;
 
             if (currentIndex >= allData.length) {{
-                btn.innerText = "已加载全部资讯";
-                btn.style.opacity = "0.6";
-                btn.style.pointerEvents = "none";
+                loadingIndicator.innerText = "已加载全部资讯";
             }}
         }}
 
-        document.addEventListener('DOMContentLoaded', loadMore);
+        window.addEventListener('scroll', () => {{
+            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300) {{
+                loadMore();
+            }}
+        }});
+
+        loadMore();
     </script>
 </body>
 </html>
@@ -194,4 +186,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已完全杜绝语法错误！")
+    print("看板生成成功，已完全清除冲突并配置好滚动加载！")
