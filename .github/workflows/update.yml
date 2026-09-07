@@ -31,7 +31,9 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git pull --rebase origin main || echo "No rebase needed"
+          git stash || true
+          git pull --rebase origin main || true
+          git stash pop || true
           git add index.html
           git commit -m "Auto-update world leaders news: $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
           git push
