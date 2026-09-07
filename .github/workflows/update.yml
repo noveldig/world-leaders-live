@@ -1,24 +1,15 @@
-name: Update World Leaders News
+name: Update News Feed
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # 每 2 小时运行一次
-  workflow_dispatch:
-
-# 设置 GitHub Pages 部署所需的权限
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
-# 允许并发部署
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+    - cron: '0 */3 * * *' # 每3小时自动运行一次，可按需调整
+  workflow_dispatch: # 支持手动触发
 
 jobs:
-  build:
+  update:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,35 +17,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install feedparser
 
-      - name: Run scraper
+      - name: Run update script
         run: python update.py
 
       - name: Commit and push if changes
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git stash || true
-          git pull --rebase origin main || true
-          git stash pop || true
           git add index.html
-          git commit -m "Auto-update world leaders news: $(date +'%Y-%m-%d %H:%M')" || echo "No changes to commit"
-          git push
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update news: $(date +'%Y-%m-%d %H:%M')" && git pull --rebase origin main && git push)
