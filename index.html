@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球政要与官方动态实时看板</title>
+    <title>全球政要与全球媒体全景实时看板</title>
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -19,7 +19,7 @@
             margin: 0;
             padding: 20px;
         }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 850px; margin: 0 auto; }
         header { text-align: center; margin-bottom: 30px; }
         header h1 { font-size: 24px; margin-bottom: 8px; color: #1a202c; }
         header p { color: var(--text-muted); font-size: 14px; }
@@ -46,26 +46,24 @@
 <body>
     <div class="container">
         <header>
-            <h1>🌐 全球政要与官方动态实时看板</h1>
-            <p>实时抓取官方资讯 <span id="trans-status" style="color: #3498db;">(正在异步翻译为中文...)</span></p>
+            <h1>🌐 全球政要与主流媒体全景看板</h1>
+            <p>汇聚全球元首推特动态与世界顶级媒体 <span id="trans-status" style="color: #3498db;">(正在异步翻译中...)</span></p>
         </header>
         <div class="news-list" id="news-container"></div>
-        <footer><p>Powered by GitHub Actions & Frontend Async Translation</p></footer>
+        <footer><p>Powered by GitHub Actions & Async Frontend Translation</p></footer>
     </div>
 
     <script>
-        const rawData = [{"source": "European Commission", "title": "Speech by Commissioner Hoekstra at the launch of Europe's largest carbon capture and storage project at Yara Sluiskil, the Netherlands", "summary": "European Commission Speech Sluiskil, 07 Sep 2026 Prime Ministers, Ladies and Gentlemen, \nPrime Minister Støre, first of all, my sincere condolences on the passing of the late King Harold V. And may I also than...", "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1809", "time": "2026-09-07 15:25"}, {"source": "European Commission", "title": "Keynote Speech by Executive Vice-President Teresa Ribera at the OECD Conference ‘Modernising merger control for an evolving world'", "summary": "European Commission Speech Paris, 07 Sep 2026 Thank you for the very nice, kind and comprehensive introduction.\nAfter such a long journey, we have had the privilege of enjoying your brains, your inputs, you...", "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1807", "time": "2026-09-07 12:06"}, {"source": "UN News", "title": "AI: Türk urges action before it becomes an ‘existential risk to humanity’", "summary": "UN human rights chief Volker Türk added his voice on Monday to growing calls for greater AI controls, warning that the revolutionary technology could become an “existential risk to humanity” if left unchecked.", "link": "https://news.un.org/feed/view/en/story/2026/09/1168288", "time": "2026-09-07 12:00"}, {"source": "UN News", "title": "Human rights chief Türk renews call for end to spiralling Sudan war", "summary": "The ongoing war in Sudan took centre stage at the UN Human Rights Council on Monday where&nbsp;the UN High Commissioner for Human Rights, Volker Türk, led calls for an end to attacks on civilians in “markets, hospitals&n", "link": "https://news.un.org/feed/view/en/story/2026/09/1168287", "time": "2026-09-07 12:00"}, {"source": "UN News", "title": "Coordinated action on clean air and climate change can net $15 for every dollar spent", "summary": "Tackling air pollution and climate change together can save millions of lives, reduce global warming and generate roughly $15 in economic benefits for every $1 spent, a new UN-backed report has revealed.", "link": "https://news.un.org/feed/view/en/story/2026/09/1168283", "time": "2026-09-07 12:00"}, {"source": "European Commission", "title": "Joint Declaration by the European Union, on the one hand, and the Government of  Greenland and the Government of Denmark, on the other,  on relations between the European Union and Greenland", "summary": "European Commission Statement Nuuk, 07 Sep 2026 \n\nThe European Union, on the one hand, and the Government of Greenland and the Government of Denmark, on the other, (hereinafter 'the Sides')  \n\n\n\n\nguided by th...", "link": "https://ec.europa.eu/commission/presscorner/detail/en/statement_26_1804", "time": "2026-09-07 09:56"}, {"source": "European Commission", "title": "Statement by President von der Leyen at the signing of the EU-Greenland Joint Declaration", "summary": "European Commission Statement Nuuk, 07 Sep 2026 Premier Nielsen, dear Jens-Frederik,\nPrime Minister Frederiksen, dear Mette,\nI also want to thank you for the excellent cooperation and the outstanding hospital...", "link": "https://ec.europa.eu/commission/presscorner/detail/en/statement_26_1803", "time": "2026-09-07 09:46"}, {"source": "European Commission", "title": "Daily News 07/ 09 / 2026", "summary": "European Commission Daily news Brussels, 07 Sep 2026 Commission greenlights the Netherlands' fourth payment request for €661 million under NextGenerationEU\nToday, the European Commission positively assessed the Ne...", "link": "https://ec.europa.eu/commission/presscorner/detail/en/mex_26_1802", "time": "2026-09-07 09:19"}, {"source": "UN News", "title": "‘Advance safety for all’: International police cooperation helps tackle cross-border crime", "summary": "As criminal networks increasingly exploit weak institutions and operate across borders, the UN says no police force can tackle them alone.", "link": "https://news.un.org/feed/view/en/story/2026/09/1168280", "time": "2026-09-06 12:00"}, {"source": "UN News", "title": "New reservoir offers innovative solution to South Sudan cattle beef", "summary": "At the end of a history-laden path winding through palm trees and scattered ruins – remnants of once-vibrant villages destroyed by cattle raids – lies a rare sight in this dry part of Terekeka county in South Sudan: a sp", "link": "https://news.un.org/feed/view/en/story/2026/09/1168266", "time": "2026-09-06 12:00"}, {"source": "The White House", "title": "Congressional Bill H.R. 6500 Signed into Law", "summary": "On Wednesday, September 2, 2026, the President signed into law: H.R. 6500, the &#8220;Continuing Appropriations and Extensions Act, 2027,&#8221; which includes a short-term continuing resolution that provides fiscal year", "link": "https://www.whitehouse.gov/briefings-statements/2026/09/congressional-bill-h-r-6500-signed-into-law/", "time": "2026-09-03 00:02"}, {"source": "The White House", "title": "Presidential Message on National Preparedness Month", "summary": "America has always been a nation of strong, capable, and determined people who understand that strength must be built before crisis. &#160;Preparedness builds that strength, and readiness is the result. &#160;This Nation", "link": "https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-preparedness-month-6e71/", "time": "2026-09-02 19:25"}, {"source": "The White House", "title": "Presidential Message on National Childhood Cancer Awareness Month", "summary": "This National Childhood Cancer Awareness Month, my Administration stands with the countless children facing the devastating effects of cancer.&#160; We recognize the love, strength, and care of the families who walk besi", "link": "https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-childhood-cancer-awareness-month/", "time": "2026-09-02 15:59"}, {"source": "The White House", "title": "Presidential Message on National Recovery Month", "summary": "During National Recovery Month, we celebrate the more than 23 million Americans who have found a pathway from addiction to recovery, we recognize those who have helped them reclaim their lives, and we renew our commitmen", "link": "https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-recovery-month/", "time": "2026-09-02 15:58"}, {"source": "The White House", "title": "Presidential Message on Overdose and Drug Poisoning Awareness Week", "summary": "During Overdose and Drug Poisoning Awareness Week, our Nation renews its resolve to defeat the scourge of illicit drugs and synthetic poisons that have devastated hundreds of thousands of American lives.&#160; My Adminis", "link": "https://www.whitehouse.gov/briefings-statements/2026/08/presidential-message-on-overdose-and-drug-poisoning-awareness-week/", "time": "2026-08-25 02:00"}];
+        const rawData = [{"source": "Al Jazeera (半岛电视台)", "title": "Moment shop worker dives into traffic to save child", "summary": "A shop worker has been hailed a ‘hero’ after CCTV video showed him diving into traffic to save a child", "link": "https://www.aljazeera.com/video/newsfeed/2026/9/7/moment-shop-worker-dives-into-traffic-to-save-child?traffic_source=rss", "time": "2026-09-07 19:27"}, {"source": "Al Jazeera (半岛电视台)", "title": "The domestic armed threat facing Iran", "summary": "External support for ethnic armed groups poses an escalating security threat to Iran, experts and state officials warn.", "link": "https://www.aljazeera.com/news/2026/9/7/the-domestic-armed-threat-facing-iran?traffic_source=rss", "time": "2026-09-07 19:06"}, {"source": "European Commission (欧盟委员会)", "title": "Speech by Commissioner Hoekstra at the launch of Europe's largest carbon capture and storage project at Yara Sluiskil, the Netherlands", "summary": "European Commission Speech Sluiskil, 07 Sep 2026 Prime Ministers, Ladies and Gentlemen, \nPrime Minister Støre, first of all, my sincere condolences on the passing of the late King ", "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1809", "time": "2026-09-07 15:25"}, {"source": "BBC World (BBC新闻)", "title": "Thousands turn out in Serbia for funeral of  'Butcher of Bosnia' Ratko Mladić", "summary": "Mladić was jailed for genocide during the 1990s Bosnian war and the EU warned Serbia not to glorify the convicted war criminal.", "link": "https://www.bbc.co.uk/news/articles/cn5dkk7yw74o?at_medium=RSS&at_campaign=rss", "time": "2026-09-07 14:50"}, {"source": "BBC World (BBC新闻)", "title": "Germany's far-right AfD says 'democracy demands' parties work with them after state election win", "summary": "The far-right party is trying to form a government in the state after falling three seats short of a majority.", "link": "https://www.bbc.co.uk/news/articles/cpd0113082eo?at_medium=RSS&at_campaign=rss", "time": "2026-09-07 14:04"}, {"source": "European Commission (欧盟委员会)", "title": "Keynote Speech by Executive Vice-President Teresa Ribera at the OECD Conference ‘Modernising merger control for an evolving world'", "summary": "European Commission Speech Paris, 07 Sep 2026 Thank you for the very nice, kind and comprehensive introduction.\nAfter such a long journey, we have had the privilege of enjoying you", "link": "https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1807", "time": "2026-09-07 12:06"}, {"source": "UN News (联合国)", "title": "AI: Türk urges action before it becomes an ‘existential risk to humanity’", "summary": "UN human rights chief Volker Türk added his voice on Monday to growing calls for greater AI controls, warning that the revolutionary technology could become an “existential risk to", "link": "https://news.un.org/feed/view/en/story/2026/09/1168288", "time": "2026-09-07 12:00"}, {"source": "UN News (联合国)", "title": "Human rights chief Türk renews call for end to spiralling Sudan war", "summary": "The ongoing war in Sudan took centre stage at the UN Human Rights Council on Monday where&nbsp;the UN High Commissioner for Human Rights, Volker Türk, led calls for an end to attac", "link": "https://news.un.org/feed/view/en/story/2026/09/1168287", "time": "2026-09-07 12:00"}, {"source": "White House (白宫官方)", "title": "Congressional Bill H.R. 6500 Signed into Law", "summary": "On Wednesday, September 2, 2026, the President signed into law: H.R. 6500, the &#8220;Continuing Appropriations and Extensions Act, 2027,&#8221; which includes a short-term continu", "link": "https://www.whitehouse.gov/briefings-statements/2026/09/congressional-bill-h-r-6500-signed-into-law/", "time": "2026-09-03 00:02"}, {"source": "White House (白宫官方)", "title": "Presidential Message on National Preparedness Month", "summary": "America has always been a nation of strong, capable, and determined people who understand that strength must be built before crisis. &#160;Preparedness builds that strength, and re", "link": "https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-preparedness-month-6e71/", "time": "2026-09-02 19:25"}, {"source": "Wall Street Journal (华尔街日报)", "title": "Palestinians Stream Back to Northern Gaza on Foot", "summary": "Israel allowed displaced Gazans to begin crossing a military zone that bisects the enclave after a deadlock over hostage releases was broken.", "link": "https://www.wsj.com/articles/palestinians-flock-back-to-northern-gaza-on-foot-after-hostage-release-breakthrough-3f60e2db", "time": "2025-01-27 19:23"}, {"source": "Wall Street Journal (华尔街日报)", "title": "Leading China Property Developer Reports Huge loss, in Sign of Widening Real-Estate Woes", "summary": "Troubles at Vanke raise questions about the continued spread of the property crisis and whether the Chinese state will step in.", "link": "https://www.wsj.com/articles/even-chinas-property-stalwart-isnt-immune-from-the-crisis-19799863", "time": "2025-01-27 17:32"}, {"source": "CNN World (CNN)", "title": "Still haven't filed your taxes? Here's what you need to know", "summary": "So far this tax season, the IRS has received more than 90 million income tax returns for 2022.", "link": "https://www.cnn.com/2023/04/13/success/tax-filing-tips/index.html", "time": "2023-04-14 20:07"}, {"source": "CNN World (CNN)", "title": "Markets digest bank earnings after recent turmoil", "summary": "", "link": "https://www.cnn.com/business/live-news/stock-market-bank-earnings/index.html", "time": "2023-04-14 20:00"}];
 
         async function translateText(text) {
             if (!text) return "";
             try {
-                // 使用免费稳定的 MyMemory 翻译 API 进行异步请求
                 const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh`;
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data && data.responseData && data.responseData.translatedText) {
                     let translated = data.responseData.translatedText;
-                    // 过滤掉 API 配额超限时的提示污染
                     if (!translated.includes("MYMEMORY WARNING")) {
                         return translated;
                     }
@@ -73,14 +71,13 @@
             } catch (e) {
                 console.log("Translation error:", e);
             }
-            return text; // 失败或超时则降级返回原文
+            return text;
         }
 
         async function render() {
             const container = document.getElementById('news-container');
             let htmlContent = '';
 
-            // 先瞬间渲染英文骨架，保证秒开
             rawData.forEach((item, index) => {
                 htmlContent += `
                 <div class="news-card" id="card-${index}">
@@ -90,14 +87,12 @@
                     </div>
                     <h2><a href="${item.link}" target="_blank" id="title-${index}">${item.title}</a></h2>
                     <p class="summary" id="summary-${index}">${item.summary}...</p>
-                    <a href="${item.link}" target="_blank" class="read-more">阅读官方原文 &rarr; <span class="translating-tag" id="tag-${index}">🔄 翻译中...</span></a>
+                    <a href="${item.link}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag" id="tag-${index}">🔄 翻译中...</span></a>
                 </div>
                 `;
             });
             container.innerHTML = htmlContent;
 
-            // 异步逐条翻译，成功即替换，失败自动保留英文
-            let successCount = 0;
             for (let i = 0; i < rawData.length; i++) {
                 const item = rawData[i];
                 try {
@@ -108,7 +103,6 @@
                     
                     if (zhTitle && zhTitle !== item.title) {
                         document.getElementById(`title-${i}`).innerText = zhTitle;
-                        successCount++;
                     }
                     if (zhSummary && zhSummary !== item.summary) {
                         document.getElementById(`summary-${i}`).innerText = zhSummary + '...';
@@ -119,7 +113,7 @@
                     document.getElementById(`tag-${i}`).innerText = "⚠️ 原文";
                 }
             }
-            document.getElementById('trans-status').innerText = "(中英双语实时加载完成)";
+            document.getElementById('trans-status').innerText = "(加载完成)";
         }
 
         document.addEventListener('DOMContentLoaded', render);
