@@ -1,6 +1,7 @@
 import feedparser
 from datetime import datetime
 import html
+import json
 import re
 
 FEEDS = {
@@ -50,8 +51,8 @@ def fetch_news():
 
                 items.append({
                     "source": source_name,
-                    "title": html.escape(title),
-                    "summary": html.escape(summary),
+                    "title": title,
+                    "summary": summary,
                     "link": link,
                     "time": pub_time
                 })
@@ -62,7 +63,8 @@ def fetch_news():
     return items
 
 def generate_html(items):
-    items_json = json.dumps(items, ensure_ascii=False)
+    # 使用 json.dumps 并转义标签防止脚本注入
+    items_json = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
 
     html_content = f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -118,17 +120,28 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>已启用极速分页流式加载 (无外部请求)</p>
+            <p>已启用安全数据管道与分页流式加载</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <button id="load-btn" class="load-more-btn" onclick="loadMore()">加载更多资讯 (&darr;)</button>
-        <footer><p>Powered by GitHub Actions & Pure Static Render</p></footer>
+        <footer><p>Powered by GitHub Actions & Safe JSON Payload</p></footer>
     </div>
 
+    <!-- 采用标准的 application/json 标签隔离数据，杜绝一切 JS 语法崩溃 -->
+    <script type="application/json" id="news-data">
+    {items_json}
+    </script>
+
     <script>
-        const allData = {items_json};
+        let allData = [];
+        try {{
+            allData = JSON.parse(document.getElementById('news-data').textContent);
+        }} catch (e) {{
+            console.error("Data parse error:", e);
+        }}
+
         let currentIndex = 0;
-        const pageSize = 10; // 每次加载 10 条
+        const pageSize = 10;
 
         function loadMore() {{
             const container = document.getElementById('news-container');
@@ -169,7 +182,6 @@ def generate_html(items):
             }}
         }}
 
-        // 页面首次打开自动加载第一页
         document.addEventListener('DOMContentLoaded', loadMore);
     </script>
 </body>
@@ -182,4 +194,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已完全去除翻译逻辑！")
+    print("看板生成成功，已完全杜绝语法错误！")
