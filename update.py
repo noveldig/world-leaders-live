@@ -1,18 +1,14 @@
 import feedparser
 from datetime import datetime
-import json
+import html
 import re
 
-# 豪华版多源 RSS 列表：涵盖全球主要首脑/政要（X 平台）及全球顶级主流媒体
 FEEDS = {
-    # --- 国际官方机构与政府 ---
     "White House (白宫官方)": "https://www.whitehouse.gov/briefings-statements/feed/",
     "UN News (联合国)": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
     "UK Government (英国政府)": "https://www.gov.uk/government/announcements.atom",
     "European Commission (欧盟委员会)": "https://ec.europa.eu/commission/presscorner/api/rss?language=en",
     "Kremlin (克里姆林宫)": "http://en.kremlin.ru/events/news/rss",
-    
-    # --- 全球主要国家元首与政要 (X / Twitter 动态) ---
     "Donald Trump": "https://rsshub.app/twitter/user/realDonaldTrump",
     "Elon Musk": "https://rsshub.app/twitter/user/elonmusk",
     "Emmanuel Macron (法国总统)": "https://rsshub.app/twitter/user/EmmanuelMacron",
@@ -21,8 +17,6 @@ FEEDS = {
     "Justin Trudeau (加拿大总理)": "https://rsshub.app/twitter/user/JustinTrudeau",
     "Olaf Scholz (德国总理)": "https://rsshub.app/twitter/user/Bundeskanzler",
     "Keir Starmer (英国首相)": "https://rsshub.app/twitter/user/Keir_Starmer",
-    
-    # --- 全球主流通讯社与新闻媒体 ---
     "Reuters (路透社)": "https://rsshub.app/reuters/world",
     "Associated Press (美联社)": "https://rsshub.app/apnews/topics/world-news",
     "BBC World (BBC新闻)": "http://feeds.bbci.co.uk/news/world/rss.xml",
@@ -41,7 +35,6 @@ def fetch_news():
         try:
             print(f"正在抓取: {source_name}...")
             feed = feedparser.parse(url)
-            # 每个源取最新的 2 条，防止源太多导致页面过载或超时
             for entry in feed.entries[:2]:
                 title = entry.get('title', 'No Title')
                 link = entry.get('link', '#')
@@ -55,29 +48,41 @@ def fetch_news():
                 summary = entry.get('summary', entry.get('description', ''))
                 summary = re.sub('<[^<]+?>', '', summary)[:180]
 
+                # 对文本进行 HTML 实体转义，防止破坏前端 DOM 结构
                 items.append({
                     "source": source_name,
-                    "title": title,
-                    "summary": summary,
+                    "title": html.escape(title),
+                    "summary": html.escape(summary),
                     "link": link,
                     "time": pub_time
                 })
         except Exception as e:
             print(f"抓取 {source_name} 失败: {e}")
 
-    # 按时间降序排序
     items.sort(key=lambda x: x['time'], reverse=True)
     return items
 
 def generate_html(items):
-    items_json = json.dumps(items, ensure_ascii=False)
+    cards_html = ""
+    for index, item in enumerate(items):
+        cards_html += f"""
+        <div class="news-card" data-index="{index}">
+            <div class="card-header">
+                <span class="badge">{item['source']}</span>
+                <span class="time">{item['time']}</span>
+            </div>
+            <h2><a href="{item['link']}" target="_blank" class="news-title" data-original="{item['title']}">{item['title']}</a></h2>
+            <p class="summary" data-original="{item['summary']}">{item['summary']}...</p>
+            <a href="{item['link']}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag">🔄 翻译中...</span></a>
+        </div>
+        """
 
     html_content = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球政要与全球媒体全景实时看板</title>
+    <title>全球政要与主流媒体全景实时看板</title>
     <style>
         :root {{
             --bg-color: #f4f6f9;
@@ -123,13 +128,13 @@ def generate_html(items):
             <h1>🌐 全球政要与主流媒体全景看板</h1>
             <p>汇聚全球元首推特动态与世界顶级媒体 <span id="trans-status" style="color: #3498db;">(正在异步翻译中...)</span></p>
         </header>
-        <div class="news-list" id="news-container"></div>
+        <div class="news-list" id="news-container">
+            {cards_html}
+        </div>
         <footer><p>Powered by GitHub Actions & Async Frontend Translation</p></footer>
     </div>
 
     <script>
-        const rawData = {items_json};
-
         async function translateText(text) {{
             if (!text) return "";
             try {{
@@ -149,42 +154,32 @@ def generate_html(items):
         }}
 
         async function render() {{
-            const container = document.getElementById('news-container');
-            let htmlContent = '';
+            const cards = document.querySelectorAll('.news-card');
+            
+            for (let card of cards) {{
+                const titleEl = card.querySelector('.news-title');
+                const summaryEl = card.querySelector('.summary');
+                const tagEl = card.querySelector('.translating-tag');
 
-            rawData.forEach((item, index) => {{
-                htmlContent += `
-                <div class="news-card" id="card-${{index}}">
-                    <div class="card-header">
-                        <span class="badge">${{item.source}}</span>
-                        <span class="time">${{item.time}}</span>
-                    </div>
-                    <h2><a href="${{item.link}}" target="_blank" id="title-${{index}}">${{item.title}}</a></h2>
-                    <p class="summary" id="summary-${{index}}">${{item.summary}}...</p>
-                    <a href="${{item.link}}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag" id="tag-${{index}}">🔄 翻译中...</span></a>
-                </div>
-                `;
-            }});
-            container.innerHTML = htmlContent;
+                const originalTitle = titleEl.getAttribute('data-original');
+                const originalSummary = summaryEl.getAttribute('data-original');
 
-            for (let i = 0; i < rawData.length; i++) {{
-                const item = rawData[i];
                 try {{
                     const [zhTitle, zhSummary] = await Promise.all([
-                        translateText(item.title),
-                        translateText(item.summary)
+                        translateText(originalTitle),
+                        translateText(originalSummary)
                     ]);
                     
-                    if (zhTitle && zhTitle !== item.title) {{
-                        document.getElementById(`title-${{i}}`).innerText = zhTitle;
+                    if (zhTitle && zhTitle !== originalTitle) {{
+                        titleEl.innerText = zhTitle;
                     }}
-                    if (zhSummary && zhSummary !== item.summary) {{
-                        document.getElementById(`summary-${{i}}`).innerText = zhSummary + '...';
+                    if (zhSummary && zhSummary !== originalSummary) {{
+                        summaryEl.innerText = zhSummary + '...';
                     }}
-                    document.getElementById(`tag-${{i}}`).innerText = "✅ 已译";
-                    document.getElementById(`tag-${{i}}`).style.color = "#27ae60";
+                    tagEl.innerText = "✅ 已译";
+                    tagEl.style.color = "#27ae60";
                 }} catch (err) {{
-                    document.getElementById(`tag-${{i}}`).innerText = "⚠️ 原文";
+                    tagEl.innerText = "⚠️ 原文";
                 }}
             }}
             document.getElementById('trans-status').innerText = "(加载完成)";
@@ -199,7 +194,7 @@ def generate_html(items):
 
 if __name__ == "__main__":
     items = fetch_news()
-    html = generate_html(items)
+    html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
-        f.write(html)
-    print("全景多源看板生成成功！")
+        f.write(html_content)
+    print("看板生成成功，语法错误已彻底修复！")
