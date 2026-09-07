@@ -2,7 +2,7 @@ name: Update News Feed
 
 on:
   schedule:
-    - cron: '0 */3 * * *' # 每3小时自动运行一次
+    - cron: '*/5 * * * *' # 每5分钟自动运行一次
   workflow_dispatch: # 支持手动触发
 
 jobs:
