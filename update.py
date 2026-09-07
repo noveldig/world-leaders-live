@@ -48,7 +48,6 @@ def fetch_news():
                 summary = entry.get('summary', entry.get('description', ''))
                 summary = re.sub('<[^<]+?>', '', summary)[:180]
 
-                # 对文本进行 HTML 实体转义，防止破坏前端 DOM 结构
                 items.append({
                     "source": source_name,
                     "title": html.escape(title),
@@ -73,7 +72,7 @@ def generate_html(items):
             </div>
             <h2><a href="{item['link']}" target="_blank" class="news-title" data-original="{item['title']}">{item['title']}</a></h2>
             <p class="summary" data-original="{item['summary']}">{item['summary']}...</p>
-            <a href="{item['link']}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag">🔄 翻译中...</span></a>
+            <a href="{item['link']}" target="_blank" class="read-more">阅读原文 &rarr; <span class="translating-tag">🔄 异步处理中...</span></a>
         </div>
         """
 
@@ -126,12 +125,12 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>汇聚全球元首推特动态与世界顶级媒体 <span id="trans-status" style="color: #3498db;">(正在异步翻译中...)</span></p>
+            <p>汇聚全球元首动态与顶级媒体 <span id="trans-status" style="color: #3498db;">(正在安全加载...)</span></p>
         </header>
         <div class="news-list" id="news-container">
             {cards_html}
         </div>
-        <footer><p>Powered by GitHub Actions & Async Frontend Translation</p></footer>
+        <footer><p>Powered by GitHub Actions & Robust Frontend Engine</p></footer>
     </div>
 
     <script>
@@ -140,7 +139,14 @@ def generate_html(items):
             try {{
                 const url = `https://api.mymemory.translated.net/get?q=${{encodeURIComponent(text)}}&langpair=en|zh`;
                 const response = await fetch(url);
-                const data = await response.json();
+                const textResponse = await response.text();
+                
+                // 严密检查：如果返回的内容开头是 '<'（说明遇到了 HTML 错误页或风控拦截），直接放弃解析
+                if (textResponse.trim().startsWith('<')) {{
+                    return text;
+                }}
+                
+                const data = JSON.parse(textResponse);
                 if (data && data.responseData && data.responseData.translatedText) {{
                     let translated = data.responseData.translatedText;
                     if (!translated.includes("MYMEMORY WARNING")) {{
@@ -148,7 +154,7 @@ def generate_html(items):
                     }}
                 }}
             }} catch (e) {{
-                console.log("Translation error:", e);
+                // 任何网络或解析异常静默捕获，绝不报错崩塌
             }}
             return text;
         }}
@@ -176,13 +182,13 @@ def generate_html(items):
                     if (zhSummary && zhSummary !== originalSummary) {{
                         summaryEl.innerText = zhSummary + '...';
                     }}
-                    tagEl.innerText = "✅ 已译";
+                    tagEl.innerText = "✅ 已同步";
                     tagEl.style.color = "#27ae60";
                 }} catch (err) {{
-                    tagEl.innerText = "⚠️ 原文";
+                    tagEl.innerText = "⚠️ 原文模式";
                 }}
             }}
-            document.getElementById('trans-status').innerText = "(加载完成)";
+            document.getElementById('trans-status').innerText = "(全部加载完成)";
         }}
 
         document.addEventListener('DOMContentLoaded', render);
@@ -197,4 +203,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，语法错误已彻底修复！")
+    print("看板生成成功，已加入防 HTML 崩溃保护！")
