@@ -186,4 +186,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已完全清除冲突并配置好滚动加载！")
+    print("看板生成成功，已成功写入 index.html！")
