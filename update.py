@@ -5,20 +5,13 @@ import re
 import urllib.request
 import urllib.parse
 
+# 仅保留稳定、高频更新的官方新闻与主流媒体源
 FEEDS = {
     "White House (白宫官方)": "https://www.whitehouse.gov/briefings-statements/feed/",
     "UN News (联合国)": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
     "UK Government (英国政府)": "https://www.gov.uk/government/announcements.atom",
     "European Commission (欧盟委员会)": "https://ec.europa.eu/commission/presscorner/api/rss?language=en",
     "Kremlin (克里姆林宫)": "http://en.kremlin.ru/events/news/rss",
-    "Donald Trump": "https://rsshub.app/twitter/user/realDonaldTrump",
-    "Elon Musk": "https://rsshub.app/twitter/user/elonmusk",
-    "Emmanuel Macron (法国总统)": "https://rsshub.app/twitter/user/EmmanuelMacron",
-    "Narendra Modi (印度总理)": "https://rsshub.app/twitter/user/narendramodi",
-    "Volodymyr Zelenskyy (乌克兰总统)": "https://rsshub.app/twitter/user/ZelenskyyUa",
-    "Justin Trudeau (加拿大总理)": "https://rsshub.app/twitter/user/JustinTrudeau",
-    "Olaf Scholz (德国总理)": "https://rsshub.app/twitter/user/Bundeskanzler",
-    "Keir Starmer (英国首相)": "https://rsshub.app/twitter/user/Keir_Starmer",
     "Reuters (路透社)": "https://rsshub.app/reuters/world",
     "Associated Press (美联社)": "https://rsshub.app/apnews/topics/world-news",
     "BBC World (BBC新闻)": "http://feeds.bbci.co.uk/news/world/rss.xml",
@@ -35,39 +28,49 @@ def translate_to_zh(text):
     if not text or re.match(r'^[\u4e00-\u9fa5]+$', text):
         return text
     try:
-        encoded_text = urllib.parse.quote(text[:500]) # 限制单次长度防止溢出
+        encoded_text = urllib.parse.quote(text[:400])
         url = f"https://api.mymemory.translated.net/get?q={encoded_text}&langpair=en|zh-CN"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=4) as response:
             data = json.loads(response.read().decode('utf-8'))
             if data and 'responseData' in data and data['responseData']['translatedText']:
                 translated = data['responseData']['translatedText']
                 if "INVALID KEY" not in translated and "QUOTA" not in translated:
                     return translated
-    except Exception as e:
-        print(f"翻译出错: {e}")
-    return text  # 失败则降级返回原文
+    except Exception:
+        pass
+    return text  # 翻译失败时返回原文，保证程序不中断
 
 def fetch_news():
     items = []
+    current_year = datetime.now().year
+    
     for source_name, url in FEEDS.items():
         try:
-            print(f"正在抓取并翻译: {source_name}...")
+            print(f"正在抓取: {source_name}...")
             feed = feedparser.parse(url)
-            for entry in feed.entries[:2]:
-                title = entry.get('title', 'No Title')
-                link = entry.get('link', '#')
+            count = 0
+            for entry in feed.entries:
+                if count >= 3:  # 每个源最多取最新的3条
+                    break
                 
                 published = entry.get('published_parsed') or entry.get('updated_parsed')
                 if published:
-                    pub_time = datetime(*published[:6]).strftime('%Y-%m-%d %H:%M')
+                    pub_time = datetime(*published[:6])
+                    # 过滤掉非当前或去年的陈旧脏数据（防止出现几年前的假新闻）
+                    if pub_time.year < current_year - 1:
+                        continue
+                    pub_time_str = pub_time.strftime('%Y-%m-%d %H:%M')
                 else:
-                    pub_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+                    pub_time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+                
+                title = entry.get('title', 'No Title')
+                link = entry.get('link', '#')
                 
                 summary = entry.get('summary', entry.get('description', ''))
-                summary = re.sub('<[^<]+?>', '', summary)[:180]
+                summary = re.sub('<[^<]+?>', '', summary)[:150]
 
-                # 后端直接转换为简体中文
+                # 后端实时转换为简体中文
                 zh_title = translate_to_zh(title)
                 zh_summary = translate_to_zh(summary)
 
@@ -76,11 +79,13 @@ def fetch_news():
                     "title": zh_title,
                     "summary": zh_summary,
                     "link": link,
-                    "time": pub_time
+                    "time": pub_time_str
                 })
+                count += 1
         except Exception as e:
             print(f"抓取 {source_name} 失败: {e}")
 
+    # 按时间降序排序
     items.sort(key=lambda x: x['time'], reverse=True)
     return items
 
@@ -135,11 +140,11 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球政要与主流媒体全景看板</h1>
-            <p>已自动转换为简体中文并启用滚动加载</p>
+            <p>实时抓取官方 RSS 并过滤陈旧内容 (滚动加载)</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by GitHub Actions & Python Translation Engine</p></footer>
+        <footer><p>Powered by GitHub Actions & Python Engine</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -209,4 +214,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已全部翻译为简体中文并写入 index.html！")
+    print("看板生成成功，已完成翻译过滤并写入 index.html！")
