@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球政要与官方动态实时看板</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --accent: #3498db;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #1a202c;
+        }
+        header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .news-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .news-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .badge {
+            background-color: #ebf8ff;
+            color: #3182ce;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .time {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        h2 {
+            font-size: 18px;
+            margin: 0 0 8px 0;
+            line-height: 1.4;
+        }
+        h2 a {
+            color: #2d3748;
+            text-decoration: none;
+        }
+        h2 a:hover {
+            color: var(--accent);
+        }
+        .original-title {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+        .summary {
+            font-size: 14px;
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        .read-more {
+            font-size: 13px;
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .read-more:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌐 全球政要与官方动态实时看板</h1>
+            <p>自动聚合白宫、联合国、英国政府等官方最新通告并实时翻译 (最后更新: 2026-09-07 17:24:46)</p>
+        </header>
+        
+        <div class="news-list">
+            
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">欧盟委员会 (European Commission)</span>
+                <span class="time">2026-09-07 15:25</span>
+            </div>
+            <h2><a href="https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1809" target="_blank">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</a></h2>
+            <p class="original-title">原标题: Speech by Commissioner Hoekstra at the launch of Europe's largest carbon capture and storage project at Yara Sluiskil, the Netherlands</p>
+            <p class="summary">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</p>
+            <a href="https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1809" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">欧盟委员会 (European Commission)</span>
+                <span class="time">2026-09-07 12:06</span>
+            </div>
+            <h2><a href="https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1807" target="_blank">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</a></h2>
+            <p class="original-title">原标题: Keynote Speech by Executive Vice-President Teresa Ribera at the OECD Conference ‘Modernising merger control for an evolving world'</p>
+            <p class="summary">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</p>
+            <a href="https://ec.europa.eu/commission/presscorner/detail/en/speech_26_1807" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">联合国 (UN News)</span>
+                <span class="time">2026-09-07 12:00</span>
+            </div>
+            <h2><a href="https://news.un.org/feed/view/en/story/2026/09/1168288" target="_blank">人工智能：图尔克敦促在它成为“人类生存风险”之前采取行动</a></h2>
+            <p class="original-title">原标题: AI: Türk urges action before it becomes an ‘existential risk to humanity’</p>
+            <p class="summary">联合国人权事务高级专员沃尔克·蒂尔克 (Volker Türk) 周一也表达了对加强人工智能控制的呼声，他警告说，如果离开美国，这项革命性技术可能会成为“人类的生存风险”。</p>
+            <a href="https://news.un.org/feed/view/en/story/2026/09/1168288" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">联合国 (UN News)</span>
+                <span class="time">2026-09-07 12:00</span>
+            </div>
+            <h2><a href="https://news.un.org/feed/view/en/story/2026/09/1168287" target="_blank">人权事务高级专员图尔克再次呼吁结束不断升级的苏丹战争</a></h2>
+            <p class="original-title">原标题: Human rights chief Türk renews call for end to spiralling Sudan war</p>
+            <p class="summary">周一，正在进行的苏丹战争成为联合国人权理事会的焦点，联合国人权事务高级专员沃尔克·蒂尔克带头呼吁停止袭击“苏丹平民”</p>
+            <a href="https://news.un.org/feed/view/en/story/2026/09/1168287" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">联合国 (UN News)</span>
+                <span class="time">2026-09-07 12:00</span>
+            </div>
+            <h2><a href="https://news.un.org/feed/view/en/story/2026/09/1168283" target="_blank">在清洁空气和气候变化方面采取协调行动，每花费 1 美元可净赚 15 美元</a></h2>
+            <p class="original-title">原标题: Coordinated action on clean air and climate change can net $15 for every dollar spent</p>
+            <p class="summary">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</p>
+            <a href="https://news.un.org/feed/view/en/story/2026/09/1168283" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">欧盟委员会 (European Commission)</span>
+                <span class="time">2026-09-07 09:56</span>
+            </div>
+            <h2><a href="https://ec.europa.eu/commission/presscorner/detail/en/statement_26_1804" target="_blank">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</a></h2>
+            <p class="original-title">原标题: Joint Declaration by the European Union, on the one hand, and the Government of  Greenland and the Government of Denmark, on the other,  on relations between the European Union and Greenland</p>
+            <p class="summary">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</p>
+            <a href="https://ec.europa.eu/commission/presscorner/detail/en/statement_26_1804" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">欧盟委员会 (European Commission)</span>
+                <span class="time">2026-09-07 09:46</span>
+            </div>
+            <h2><a href="https://ec.europa.eu/commission/presscorner/detail/en/statement_26_1803" target="_blank">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</a></h2>
+            <p class="original-title">原标题: Statement by President von der Leyen at the signing of the EU-Greenland Joint Declaration</p>
+            <p class="summary">欧盟委员会声明 努克，2026 年 9 月 7 日 总理尼尔森，亲爱的 Jens-Frederik，
+弗雷德里克森总理，亲爱的梅特，
+我还要感谢你们的出色合作和杰出表现</p>
+            <a href="https://ec.europa.eu/commission/presscorner/detail/en/statement_26_1803" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">欧盟委员会 (European Commission)</span>
+                <span class="time">2026-09-07 09:19</span>
+            </div>
+            <h2><a href="https://ec.europa.eu/commission/presscorner/detail/en/mex_26_1802" target="_blank">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</a></h2>
+            <p class="original-title">原标题: Daily News 07/ 09 / 2026</p>
+            <p class="summary">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</p>
+            <a href="https://ec.europa.eu/commission/presscorner/detail/en/mex_26_1802" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">联合国 (UN News)</span>
+                <span class="time">2026-09-06 12:00</span>
+            </div>
+            <h2><a href="https://news.un.org/feed/view/en/story/2026/09/1168280" target="_blank">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</a></h2>
+            <p class="original-title">原标题: ‘Advance safety for all’: International police cooperation helps tackle cross-border crime</p>
+            <p class="summary">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</p>
+            <a href="https://news.un.org/feed/view/en/story/2026/09/1168280" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">联合国 (UN News)</span>
+                <span class="time">2026-09-06 12:00</span>
+            </div>
+            <h2><a href="https://news.un.org/feed/view/en/story/2026/09/1168266" target="_blank">新水库为南苏丹牛肉提供创新解决方案</a></h2>
+            <p class="original-title">原标题: New reservoir offers innovative solution to South Sudan cattle beef</p>
+            <p class="summary">Error 500 (Server Error)!!1500.That’s an error.There was an error. Please try again later.That’s all we know.</p>
+            <a href="https://news.un.org/feed/view/en/story/2026/09/1168266" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">白宫 (The White House)</span>
+                <span class="time">2026-09-03 00:02</span>
+            </div>
+            <h2><a href="https://www.whitehouse.gov/briefings-statements/2026/09/congressional-bill-h-r-6500-signed-into-law/" target="_blank">国会法案 H.R. 6500 签署成为法律</a></h2>
+            <p class="original-title">原标题: Congressional Bill H.R. 6500 Signed into Law</p>
+            <p class="summary">2026 年 9 月 2 日星期三，总统签署成为法律：H.R. 6500，《2027 年持续拨款和延期法案》，其中包括一项短期持续决议</p>
+            <a href="https://www.whitehouse.gov/briefings-statements/2026/09/congressional-bill-h-r-6500-signed-into-law/" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">白宫 (The White House)</span>
+                <span class="time">2026-09-02 19:25</span>
+            </div>
+            <h2><a href="https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-preparedness-month-6e71/" target="_blank">国家备灾月总统致辞</a></h2>
+            <p class="original-title">原标题: Presidential Message on National Preparedness Month</p>
+            <p class="summary">美国一直是一个由强大、有能力、意志坚定的人民组成的国家，他们明白必须在危机发生之前增强实力。 &#160;准备增强力量，准备就是结果</p>
+            <a href="https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-preparedness-month-6e71/" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">白宫 (The White House)</span>
+                <span class="time">2026-09-02 15:59</span>
+            </div>
+            <h2><a href="https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-childhood-cancer-awareness-month/" target="_blank">全国儿童癌症宣传月总统致辞</a></h2>
+            <p class="original-title">原标题: Presidential Message on National Childhood Cancer Awareness Month</p>
+            <p class="summary">在这个全国儿童癌症宣传月，我的政府与无数面临癌症破坏性影响的儿童站在一起。我们认识到父亲的爱、力量和关怀</p>
+            <a href="https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-childhood-cancer-awareness-month/" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">白宫 (The White House)</span>
+                <span class="time">2026-09-02 15:58</span>
+            </div>
+            <h2><a href="https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-recovery-month/" target="_blank">国家复苏月总统致辞</a></h2>
+            <p class="original-title">原标题: Presidential Message on National Recovery Month</p>
+            <p class="summary">在全国康复月期间，我们庆祝超过 2300 万美国人找到了戒毒之路，我们表彰那些帮助他们重获新生的人，我们</p>
+            <a href="https://www.whitehouse.gov/briefings-statements/2026/09/presidential-message-on-national-recovery-month/" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        <div class="news-card">
+            <div class="card-header">
+                <span class="badge">白宫 (The White House)</span>
+                <span class="time">2026-08-25 02:00</span>
+            </div>
+            <h2><a href="https://www.whitehouse.gov/briefings-statements/2026/08/presidential-message-on-overdose-and-drug-poisoning-awareness-week/" target="_blank">关于服药过量和药物中毒意识周的总统致辞</a></h2>
+            <p class="original-title">原标题: Presidential Message on Overdose and Drug Poisoning Awareness Week</p>
+            <p class="summary">在药物过量和药物中毒意识周期间，我们的国家重申了战胜非法药物和合成毒物祸害的决心，这些祸害已经摧毁了数十万美国人的生命</p>
+            <a href="https://www.whitehouse.gov/briefings-statements/2026/08/presidential-message-on-overdose-and-drug-poisoning-awareness-week/" target="_blank" class="read-more">阅读官方原文 &rarr;</a>
+        </div>
+        
+        </div>
+        
+        <footer>
+            <p>Powered by GitHub Actions & Python | 自动定时更新</p>
+        </footer>
+    </div>
+</body>
+</html>
