@@ -41,6 +41,12 @@ FEEDS = {
     "Asahi Shimbun (朝日新闻)": "https://www.asahi.com/rss/asahi/news.rdf"
 }
 
+def clean_text(text):
+    if not text:
+        return ""
+    # 基础清洗 HTML 标签
+    return re.sub('<[^<]+?>', '', text).strip()
+
 def fetch_news():
     items = []
     current_year = 2026
@@ -66,11 +72,9 @@ def fetch_news():
                 else:
                     pub_time_str = datetime.now(BEIJING_TZ).strftime('%Y-%m-%d %H:%M')
                 
-                title = entry.get('title', 'No Title')
+                title = clean_text(entry.get('title', 'No Title'))
                 link = entry.get('link', '#')
-                
-                summary = entry.get('summary', entry.get('description', ''))
-                summary = re.sub('<[^<]+?>', '', summary)[:150]
+                summary = clean_text(entry.get('summary', entry.get('description', '')))[:180]
 
                 items.append({
                     "source": source_name,
@@ -129,7 +133,6 @@ def generate_html(items):
         h2 a:hover { color: var(--accent); }
         .summary { font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 12px; }
         .read-more { font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }
-        .translating-tag { font-size: 11px; color: #e67e22; margin-left: 8px; font-weight: normal; }
         .loading-status { text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px; }
         footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--text-muted); }
     </style>
@@ -138,11 +141,11 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
-            <p>北京时间实时更新 | 多源智能负载均衡与防429频控优化</p>
+            <p>每5分钟自动刷新 | 北京时间实时同步 | 极速秒开无卡顿</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by Multi-Engine Translation & Smart Caching</p></footer>
+        <footer><p>Powered by GitHub Actions & Zero-Latency Engine</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -158,102 +161,9 @@ def generate_html(items):
         }
 
         let currentIndex = 0;
-        const pageSize = 10;
+        const pageSize = 12;
         const container = document.getElementById('news-container');
         const loadingIndicator = document.getElementById('loading');
-
-        // 专业财经与政治术语修正库
-        const glossary = {
-            "Federal Reserve": "美联储",
-            "Nonfarm Payrolls": "非农就业数据",
-            "Nonfarm": "非农",
-            "Interest Rate": "利率",
-            "Inflation": "通货膨胀",
-            "Stock Market": "股市",
-            "Wall Street": "华尔街",
-            "White House": "白宫",
-            "Supreme Court": "最高法院"
-        };
-
-        function applyGlossary(text) {
-            if (!text) return text;
-            let corrected = text;
-            for (const [en, zh] of Object.entries(glossary)) {
-                const regex = new RegExp(`\\b${en}\\b`, 'gi');
-                corrected = corrected.replace(regex, zh);
-            }
-            return corrected;
-        }
-
-        // 多源轮询防429翻译核心（带本地缓存与故障自动转移）
-        async function translateText(text) {
-            if (!text || /^[\u4e00-\u9fa5]+$/.test(text)) return applyGlossary(text);
-            
-            // 检查本地缓存，避免重复请求
-            const cacheKey = 'trans_' + text.substring(0, 50);
-            const cached = localStorage.getItem(cacheKey);
-            if (cached) return cached;
-
-            let translated = text;
-
-            // 线路 1: Argos Open Tech 节点
-            try {
-                const res = await fetch('https://translate.argosopentech.com/translate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ q: text, source: 'en', target: 'zh', format: 'text' })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.translatedText) {
-                        translated = data.translatedText;
-                        localStorage.setItem(cacheKey, applyGlossary(translated));
-                        return applyGlossary(translated);
-                    }
-                }
-            } catch (e) {}
-
-            // 线路 2: MyMemory 备用通道（带延迟控制防 429）
-            try {
-                await new Promise(r => setTimeout(r, 200)); // 控频防并发过高
-                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.responseData && data.responseData.translatedText) {
-                        let t = data.responseData.translatedText;
-                        if (!t.includes("INVALID KEY") && !t.includes("QUOTA") && !t.includes("PERMISSION")) {
-                            translated = t;
-                            localStorage.setItem(cacheKey, applyGlossary(translated));
-                            return applyGlossary(translated);
-                        }
-                    }
-                }
-            } catch (err) {}
-
-            const finalResult = applyGlossary(translated);
-            localStorage.setItem(cacheKey, finalResult);
-            return finalResult;
-        }
-
-        // 控制每批次串行/限速并发，彻底解决 429 报错
-        async function processBatchTranslation(cardEl, item) {
-            const titleEl = cardEl.querySelector('.news-title');
-            const summaryEl = cardEl.querySelector('.news-summary');
-            const tagEl = cardEl.querySelector('.translating-tag');
-
-            try {
-                const transTitle = await translateText(item.title);
-                await new Promise(r => setTimeout(r, 150)); // 缓冲间隔
-                const transSummary = await translateText(item.summary);
-
-                if (transTitle) titleEl.innerText = transTitle;
-                if (transSummary) summaryEl.innerText = transSummary + "...";
-            } catch (err) {
-                console.error("Translation error:", err);
-            } finally {
-                if (tagEl) tagEl.remove();
-            }
-        }
 
         function loadMore() {
             if (currentIndex >= allData.length) {
@@ -265,34 +175,21 @@ def generate_html(items):
             const batch = allData.slice(currentIndex, nextEnd);
             
             let batchHtml = '';
-            batch.forEach((item, index) => {
-                const globalIdx = currentIndex + index;
+            batch.forEach((item) => {
                 batchHtml += `
-                <div class="news-card" id="card-${globalIdx}">
+                <div class="news-card">
                     <div class="card-header">
                         <span class="badge">${item.source}</span>
                         <span class="time">${item.time} (北京时间)</span>
                     </div>
-                    <h2><a href="${item.link}" target="_blank" class="news-title">${item.title}</a><span class="translating-tag">(极速翻译中...)</span></h2>
-                    <p class="summary news-summary">${item.summary}</p>
+                    <h2><a href="${item.link}" target="_blank">${item.title}</a></h2>
+                    <p class="summary">${item.summary}...</p>
                     <a href="${item.link}" target="_blank" class="read-more">阅读原文 &rarr;</a>
                 </div>
                 `;
             });
 
             container.insertAdjacentHTML('beforeend', batchHtml);
-
-            // 错峰排队异步翻译，杜绝 429
-            batch.forEach((item, index) => {
-                const globalIdx = currentIndex + index;
-                const cardEl = document.getElementById(`card-${globalIdx}`);
-                if (cardEl) {
-                    setTimeout(() => {
-                        processBatchTranslation(cardEl, item);
-                    }, index * 250); // 每条卡片错开 250ms 发送
-                }
-            });
-
             currentIndex = nextEnd;
 
             if (currentIndex >= allData.length) {
@@ -318,4 +215,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已成功升级多源轮询防429限速策略！")
+    print("看板生成成功，已完美去除429卡顿隐患并大幅提升加载效率！")
