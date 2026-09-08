@@ -146,7 +146,7 @@ def generate_html(items):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球官媒、政要推特与财金指数实时看板</title>
+    <title>全球实时看板</title>
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -188,8 +188,8 @@ def generate_html(items):
 <body>
     <div class="container">
         <header>
-            <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
-            <p>北京时间同步 | 后端高稳定双语翻译 | 秒开无卡顿</p>
+            <h1>🌐 全球全景看板</h1>
+            <p>北京时间同步 | 双语翻译 | 秒开无卡顿</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
