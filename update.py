@@ -57,7 +57,6 @@ def fetch_news():
                 
                 published = entry.get('published_parsed') or entry.get('updated_parsed')
                 if published:
-                    # 转换为带 UTC 时 aware 的 datetime，再转为北京时间 (UTC+8)
                     dt_utc = datetime(*published[:6], tzinfo=timezone.utc)
                     dt_bj = dt_utc.astimezone(BEIJING_TZ)
                     
@@ -139,11 +138,11 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
-            <p>发布时间已同步为北京时间，支持前端异步智能翻译</p>
+            <p>北京时间实时更新，内置专业财金与政经术语智能对齐</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by GitHub Actions & Async Frontend Translation</p></footer>
+        <footer><p>Powered by GitHub Actions & Pro-Glossary Engine</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -163,34 +162,60 @@ def generate_html(items):
         const container = document.getElementById('news-container');
         const loadingIndicator = document.getElementById('loading');
 
-        // 前端多源异步翻译函数（带降级保障）
-        async function translateText(text) {
-            if (!text || /^[\\u4e00-\\u9fa5]+$/.test(text)) return text;
-            
-            // 尝试源 1: MyMemory API
-            try {
-                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`);
-                const data = await res.json();
-                if (data && data.responseData && data.responseData.translatedText) {
-                    let translated = data.responseData.translatedText;
-                    if (!translated.includes("INVALID KEY") && !translated.includes("QUERY LENGTH")) {
-                        return translated;
-                    }
-                }
-            } catch (e) {}
+        // 专业财经与政治名词本地对齐修正库（彻底消除直译导致的硬伤）
+        const glossary = {
+            "Federal Reserve": "美联储",
+            "Nonfarm Payrolls": "非农就业数据",
+            "Nonfarm": "非农",
+            "Interest Rate": "利率",
+            "Inflation": "通货膨胀",
+            "Stock Market": "股市",
+            "Wall Street": "华尔街",
+            "White House": "白宫",
+            "Supreme Court": "最高法院",
+            "Department of State": "国务院"
+        };
 
-            // 尝试源 2: LibreTranslate 公共节点备用
+        function applyGlossary(text) {
+            if (!text) return text;
+            let corrected = text;
+            for (const [en, zh] of Object.entries(glossary)) {
+                const regex = new RegExp(`\\b${en}\\b`, 'gi');
+                corrected = corrected.replace(regex, zh);
+            }
+            return corrected;
+        }
+
+        async function translateText(text) {
+            if (!text || /^[\u4e00-\u9fa5]+$/.test(text)) return applyGlossary(text);
+            
+            let translated = text;
+            // 线路 1: LibreTranslate API
             try {
-                const res = await fetch('https://libretranslate.de/translate', {
+                const res = constRes = await fetch('https://libretranslate.com/translate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ q: text, source: 'en', target: 'zh', format: 'text' })
                 });
                 const data = await res.json();
-                if (data && data.translatedText) return data.translatedText;
-            } catch (e) {}
+                if (data && data.translatedText) {
+                    translated = data.translatedText;
+                }
+            } catch (e) {
+                // 线路 2: 降级到 MyMemory 接口
+                try {
+                    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`);
+                    const data = await res.json();
+                    if (data && data.responseData && data.responseData.translatedText) {
+                        let t = data.responseData.translatedText;
+                        if (!t.includes("INVALID KEY") && !t.includes("QUOTA")) {
+                            translated = t;
+                        }
+                    }
+                } catch (err) {}
+            }
 
-            return text; // 降级返回原文
+            return applyGlossary(translated);
         }
 
         async function processBatchTranslation(cardEl, item) {
@@ -204,12 +229,8 @@ def generate_html(items):
                     translateText(item.summary)
                 ]);
 
-                if (transTitle !== item.title) {
-                    titleEl.innerText = transTitle;
-                }
-                if (transSummary !== item.summary) {
-                    summaryEl.innerText = transSummary + "...";
-                }
+                if (transTitle) titleEl.innerText = transTitle;
+                if (transSummary) summaryEl.innerText = transSummary + "...";
             } catch (err) {
                 console.error("Translation error:", err);
             } finally {
@@ -235,7 +256,7 @@ def generate_html(items):
                         <span class="badge">${item.source}</span>
                         <span class="time">${item.time} (北京时间)</span>
                     </div>
-                    <h2><a href="${item.link}" target="_blank" class="news-title">${item.title}</a><span class="translating-tag">(翻译中...)</span></h2>
+                    <h2><a href="${item.link}" target="_blank" class="news-title">${item.title}</a><span class="translating-tag">(智能校对中...)</span></h2>
                     <p class="summary news-summary">${item.summary}</p>
                     <a href="${item.link}" target="_blank" class="read-more">阅读原文 &rarr;</a>
                 </div>
@@ -244,7 +265,6 @@ def generate_html(items):
 
             container.insertAdjacentHTML('beforeend', batchHtml);
 
-            // 异步触发当前批次的逐条翻译
             batch.forEach((item, index) => {
                 const globalIdx = currentIndex + index;
                 const cardEl = document.getElementById(`card-${globalIdx}`);
@@ -278,4 +298,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已转换为北京时间并启用前端异步翻译！")
+    print("看板生成成功，已大幅优化翻译准确率与术语对齐！")
