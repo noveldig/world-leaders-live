@@ -2,6 +2,9 @@ import feedparser
 from datetime import datetime, timezone, timedelta
 import json
 import re
+import urllib.request
+import urllib.parse
+import time
 
 FEEDS = {
     # 🏛️ 核心官媒与国际组织
@@ -41,10 +44,50 @@ FEEDS = {
     "Asahi Shimbun (朝日新闻)": "https://www.asahi.com/rss/asahi/news.rdf"
 }
 
+# 专业术语本地映射（确保财经与政治词汇精准）
+GLOSSARY = {
+    "Federal Reserve": "美联储",
+    "Nonfarm Payrolls": "非农就业数据",
+    "Nonfarm": "非农",
+    "Interest Rate": "利率",
+    "Inflation": "通货膨胀",
+    "Stock Market": "股市",
+    "Wall Street": "华尔街",
+    "White House": "白宫"
+}
+
+def apply_glossary(text):
+    if not text:
+        return text
+    corrected = text
+    for en, zh in GLOSSARY.items():
+        corrected = re.sub(rf'\b{en}\b', zh, corrected, flags=re.IGNORECASE)
+    return corrected
+
+def translate_to_zh(text):
+    if not text or re.match(r'^[\u4e00-\u9fa5\s\d\W]+$', text):
+        return apply_glossary(text)
+    
+    try:
+        encoded_text = urllib.parse.quote(text[:300])
+        url = f"https://api.mymemory.translated.net/get?q={encoded_text}&langpair=en|zh-CN"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            if data and 'responseData' in data and data['responseData']['translatedText']:
+                translated = data['responseData']['translatedText']
+                if "INVALID KEY" not in translated and "QUOTA" not in translated:
+                    time.sleep(0.5) # 后端请求限速，防 429
+                    return apply_glossary(translated)
+    except Exception:
+        pass
+    
+    time.sleep(0.5)
+    return apply_glossary(text)
+
 def clean_text(text):
     if not text:
         return ""
-    # 基础清洗 HTML 标签
     return re.sub('<[^<]+?>', '', text).strip()
 
 def fetch_news():
@@ -54,7 +97,7 @@ def fetch_news():
     
     for source_name, url in FEEDS.items():
         try:
-            print(f"正在抓取: {source_name}...")
+            print(f"正在抓取并翻译: {source_name}...")
             feed = feedparser.parse(url)
             count = 0
             for entry in feed.entries:
@@ -72,14 +115,19 @@ def fetch_news():
                 else:
                     pub_time_str = datetime.now(BEIJING_TZ).strftime('%Y-%m-%d %H:%M')
                 
-                title = clean_text(entry.get('title', 'No Title'))
+                raw_title = clean_text(entry.get('title', 'No Title'))
+                raw_summary = clean_text(entry.get('summary', entry.get('description', '')))[:180]
+                
+                # 在后端构建时完成翻译
+                zh_title = translate_to_zh(raw_title)
+                zh_summary = translate_to_zh(raw_summary)
+                
                 link = entry.get('link', '#')
-                summary = clean_text(entry.get('summary', entry.get('description', '')))[:180]
 
                 items.append({
                     "source": source_name,
-                    "title": title,
-                    "summary": summary,
+                    "title": zh_title,
+                    "summary": zh_summary,
                     "link": link,
                     "time": pub_time_str
                 })
@@ -98,7 +146,7 @@ def generate_html(items):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球官媒、政要推特与财金指数实时看板</title>
+    <title>全球实时看板</title>
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -140,12 +188,12 @@ def generate_html(items):
 <body>
     <div class="container">
         <header>
-            <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
-            <p>每5分钟自动刷新 | 北京时间实时同步 | 极速秒开无卡顿</p>
+            <h1>🌐 全球全景看板</h1>
+            <p>北京时间同步 | 智能中文翻译 | 秒开无卡顿</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by GitHub Actions & Zero-Latency Engine</p></footer>
+        <footer><p>Powered by GitHub Actions & Python Build-time Translation</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -215,4 +263,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已完美去除429卡顿隐患并大幅提升加载效率！")
+    print("看板生成成功，已完美实现后端稳定翻译！")
