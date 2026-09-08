@@ -5,19 +5,35 @@ import re
 import urllib.request
 import urllib.parse
 
-# 扩展涵盖全球财经、美联储、股市指数与地缘政治的权威 RSS 源
+# 汇聚官媒、领导人推特、美联储、股市指数与非农财金头条的超级源列表
 FEEDS = {
+    # 🏛️ 核心官媒与国际组织
+    "新华网头条 (Xinhua)": "https://rsshub.app/xinhua/latest",
+    "人民网头条 (People's Daily)": "https://rsshub.app/people/latest",
+    "白宫官方 (White House)": "https://www.whitehouse.gov/briefings-statements/feed/",
+    "联合国新闻 (UN News)": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+    "克里姆林宫 (Kremlin)": "http://en.kremlin.ru/events/news/rss",
+    
+    # 🦅 美联储与全球财金、非农、股市指数
     "美联储官方发布 (Federal Reserve)": "https://www.federalreserve.gov/feeds/press_all.xml",
+    "金十数据快讯 (Jin10)": "https://rsshub.app/jin10/important",
+    "财联社电报 (CLS Telegraph)": "https://rsshub.app/cls/telegraph",
     "CNBC 市场与财经 (CNBC Markets)": "https://www.cnbc.com/id/100003114/device/rss/rss.html",
     "华尔街日报市场 (WSJ Markets)": "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",
     "金融时报全球头条 (Financial Times)": "https://www.ft.com/rss/home/international",
     "路透社财经与市场 (Reuters Business)": "https://rsshub.app/reuters/business",
     "彭博社财经 (Bloomberg)": "https://rsshub.app/bloomberg",
-    "白宫官方 (White House)": "https://www.whitehouse.gov/briefings-statements/feed/",
-    "联合国新闻 (UN News)": "https://news.un.org/feed/subscribe/en/news/all/rss.xml",
-    "英国政府公告 (UK Gov)": "https://www.gov.uk/government/announcements.atom",
-    "欧盟委员会 (EU Commission)": "https://ec.europa.eu/commission/presscorner/api/rss?language=en",
-    "克里姆林宫 (Kremlin)": "http://en.kremlin.ru/events/news/rss",
+    
+    # 🐦 全球核心领导人与政要推特 (X) 实时动态
+    "Donald Trump (特朗普)": "https://rsshub.app/twitter/user/realDonaldTrump",
+    "Elon Musk (马斯克)": "https://rsshub.app/twitter/user/elonmusk",
+    "Volodymyr Zelenskyy (乌克兰总统)": "https://rsshub.app/twitter/user/ZelenskyyUa",
+    "Emmanuel Macron (法国总统)": "https://rsshub.app/twitter/user/EmmanuelMacron",
+    "Narendra Modi (印度总理)": "https://rsshub.app/twitter/user/narendramodi",
+    "Olaf Scholz (德国总理)": "https://rsshub.app/twitter/user/Bundeskanzler",
+    "Keir Starmer (英国首相)": "https://rsshub.app/twitter/user/Keir_Starmer",
+    
+    # 🌍 主流国际大报
     "路透社全球要闻 (Reuters World)": "https://rsshub.app/reuters/world",
     "美联社 (AP News)": "https://rsshub.app/apnews/topics/world-news",
     "BBC 世界新闻 (BBC World)": "http://feeds.bbci.co.uk/news/world/rss.xml",
@@ -55,7 +71,7 @@ def fetch_news():
             feed = feedparser.parse(url)
             count = 0
             for entry in feed.entries:
-                if count >= 5:
+                if count >= 4:  # 每个源取最新的4条
                     break
                 
                 published = entry.get('published_parsed') or entry.get('updated_parsed')
@@ -98,7 +114,7 @@ def generate_html(items):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球政经与金融头条实时看板</title>
+    <title>全球实时看板</title>
     <style>
         :root {{
             --bg-color: #f4f6f9;
@@ -140,8 +156,8 @@ def generate_html(items):
 <body>
     <div class="container">
         <header>
-            <h1>📈 全球政经、美联储与金融头条全景看板</h1>
-            <p>已整合美联储、股市财金及地缘头条，实时简体中文更新</p>
+            <h1>🌐 全球全景看板</h1>
+            <p>实时聚合官媒、领导人社交动态、美联储与全球股市指数</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
@@ -187,7 +203,7 @@ def generate_html(items):
                     <a href="${{item.link}}" target="_blank" class="read-more">阅读原文 &rarr;</a>
                 </div>
                 `;
-            }});
+            }));
 
             container.insertAdjacentHTML('beforeend', batchHtml);
             currentIndex = nextEnd;
@@ -215,4 +231,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已成功增加财经与美联储等头条源！")
+    print("看板生成成功，已成功加入官媒、推特及财金指数源！")
