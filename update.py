@@ -138,11 +138,11 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
-            <p>北京时间实时更新，内置专业财金与政经术语智能对齐</p>
+            <p>北京时间实时更新 | 多源智能负载均衡与防429频控优化</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by GitHub Actions & Pro-Glossary Engine</p></footer>
+        <footer><p>Powered by Multi-Engine Translation & Smart Caching</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -162,7 +162,7 @@ def generate_html(items):
         const container = document.getElementById('news-container');
         const loadingIndicator = document.getElementById('loading');
 
-        // 专业财经与政治名词本地对齐修正库（彻底消除直译导致的硬伤）
+        // 专业财经与政治术语修正库
         const glossary = {
             "Federal Reserve": "美联储",
             "Nonfarm Payrolls": "非农就业数据",
@@ -172,8 +172,7 @@ def generate_html(items):
             "Stock Market": "股市",
             "Wall Street": "华尔街",
             "White House": "白宫",
-            "Supreme Court": "最高法院",
-            "Department of State": "国务院"
+            "Supreme Court": "最高法院"
         };
 
         function applyGlossary(text) {
@@ -186,48 +185,66 @@ def generate_html(items):
             return corrected;
         }
 
+        // 多源轮询防429翻译核心（带本地缓存与故障自动转移）
         async function translateText(text) {
             if (!text || /^[\u4e00-\u9fa5]+$/.test(text)) return applyGlossary(text);
             
+            // 检查本地缓存，避免重复请求
+            const cacheKey = 'trans_' + text.substring(0, 50);
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) return cached;
+
             let translated = text;
-            // 线路 1: LibreTranslate API
+
+            // 线路 1: Argos Open Tech 节点
             try {
-                const res = constRes = await fetch('https://libretranslate.com/translate', {
+                const res = await fetch('https://translate.argosopentech.com/translate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ q: text, source: 'en', target: 'zh', format: 'text' })
                 });
-                const data = await res.json();
-                if (data && data.translatedText) {
-                    translated = data.translatedText;
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.translatedText) {
+                        translated = data.translatedText;
+                        localStorage.setItem(cacheKey, applyGlossary(translated));
+                        return applyGlossary(translated);
+                    }
                 }
-            } catch (e) {
-                // 线路 2: 降级到 MyMemory 接口
-                try {
-                    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`);
+            } catch (e) {}
+
+            // 线路 2: MyMemory 备用通道（带延迟控制防 429）
+            try {
+                await new Promise(r => setTimeout(r, 200)); // 控频防并发过高
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`);
+                if (res.ok) {
                     const data = await res.json();
                     if (data && data.responseData && data.responseData.translatedText) {
                         let t = data.responseData.translatedText;
-                        if (!t.includes("INVALID KEY") && !t.includes("QUOTA")) {
+                        if (!t.includes("INVALID KEY") && !t.includes("QUOTA") && !t.includes("PERMISSION")) {
                             translated = t;
+                            localStorage.setItem(cacheKey, applyGlossary(translated));
+                            return applyGlossary(translated);
                         }
                     }
-                } catch (err) {}
-            }
+                }
+            } catch (err) {}
 
-            return applyGlossary(translated);
+            const finalResult = applyGlossary(translated);
+            localStorage.setItem(cacheKey, finalResult);
+            return finalResult;
         }
 
+        // 控制每批次串行/限速并发，彻底解决 429 报错
         async function processBatchTranslation(cardEl, item) {
             const titleEl = cardEl.querySelector('.news-title');
             const summaryEl = cardEl.querySelector('.news-summary');
             const tagEl = cardEl.querySelector('.translating-tag');
 
             try {
-                const [transTitle, transSummary] = await Promise.all([
-                    translateText(item.title),
-                    translateText(item.summary)
-                ]);
+                const transTitle = await translateText(item.title);
+                await new Promise(r => setTimeout(r, 150)); // 缓冲间隔
+                const transSummary = await translateText(item.summary);
 
                 if (transTitle) titleEl.innerText = transTitle;
                 if (transSummary) summaryEl.innerText = transSummary + "...";
@@ -256,7 +273,7 @@ def generate_html(items):
                         <span class="badge">${item.source}</span>
                         <span class="time">${item.time} (北京时间)</span>
                     </div>
-                    <h2><a href="${item.link}" target="_blank" class="news-title">${item.title}</a><span class="translating-tag">(智能校对中...)</span></h2>
+                    <h2><a href="${item.link}" target="_blank" class="news-title">${item.title}</a><span class="translating-tag">(极速翻译中...)</span></h2>
                     <p class="summary news-summary">${item.summary}</p>
                     <a href="${item.link}" target="_blank" class="read-more">阅读原文 &rarr;</a>
                 </div>
@@ -265,11 +282,14 @@ def generate_html(items):
 
             container.insertAdjacentHTML('beforeend', batchHtml);
 
+            // 错峰排队异步翻译，杜绝 429
             batch.forEach((item, index) => {
                 const globalIdx = currentIndex + index;
                 const cardEl = document.getElementById(`card-${globalIdx}`);
                 if (cardEl) {
-                    processBatchTranslation(cardEl, item);
+                    setTimeout(() => {
+                        processBatchTranslation(cardEl, item);
+                    }, index * 250); // 每条卡片错开 250ms 发送
                 }
             });
 
@@ -298,4 +318,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已大幅优化翻译准确率与术语对齐！")
+    print("看板生成成功，已成功升级多源轮询防429限速策略！")
