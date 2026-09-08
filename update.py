@@ -44,7 +44,6 @@ FEEDS = {
     "Asahi Shimbun (朝日新闻)": "https://www.asahi.com/rss/asahi/news.rdf"
 }
 
-# 专业术语本地映射（确保财经与政治词汇精准）
 GLOSSARY = {
     "Federal Reserve": "美联储",
     "Nonfarm Payrolls": "非农就业数据",
@@ -69,20 +68,22 @@ def translate_to_zh(text):
         return apply_glossary(text)
     
     try:
-        encoded_text = urllib.parse.quote(text[:300])
-        url = f"https://api.mymemory.translated.net/get?q={encoded_text}&langpair=en|zh-CN"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            if data and 'responseData' in data and data['responseData']['translatedText']:
-                translated = data['responseData']['translatedText']
-                if "INVALID KEY" not in translated and "QUOTA" not in translated:
-                    time.sleep(0.5) # 后端请求限速，防 429
+        encoded_text = urllib.parse.quote(text[:500])
+        # 使用 Google 稳定翻译通道（gtx接口），无需 Key 且对 CI 环境极度友好
+        url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=zh-CN&dt=t&q={encoded_text}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'})
+        with urllib.request.urlopen(req, timeout=6) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            if res_data and isinstance(res_data, list) and len(res_data) > 0:
+                translated_parts = [item[0] for item in res_data[0] if item and item[0]]
+                translated = "".join(translated_parts)
+                if translated:
+                    time.sleep(0.3)
                     return apply_glossary(translated)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"翻译异常: {e}")
     
-    time.sleep(0.5)
+    time.sleep(0.3)
     return apply_glossary(text)
 
 def clean_text(text):
@@ -118,7 +119,6 @@ def fetch_news():
                 raw_title = clean_text(entry.get('title', 'No Title'))
                 raw_summary = clean_text(entry.get('summary', entry.get('description', '')))[:180]
                 
-                # 在后端构建时完成翻译
                 zh_title = translate_to_zh(raw_title)
                 zh_summary = translate_to_zh(raw_summary)
                 
@@ -146,7 +146,7 @@ def generate_html(items):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球实时看板</title>
+    <title>全球官媒、政要推特与财金指数实时看板</title>
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -188,12 +188,12 @@ def generate_html(items):
 <body>
     <div class="container">
         <header>
-            <h1>🌐 全球全景看板</h1>
-            <p>北京时间同步 | 智能中文翻译 | 秒开无卡顿</p>
+            <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
+            <p>北京时间同步 | 后端高稳定双语翻译 | 秒开无卡顿</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by GitHub Actions & Python Build-time Translation</p></footer>
+        <footer><p>Powered by GitHub Actions & Stable Translation Engine</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -263,4 +263,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已完美实现后端稳定翻译！")
+    print("看板生成成功，已切换至高稳定性翻译通道！")
