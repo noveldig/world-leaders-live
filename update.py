@@ -71,7 +71,7 @@ def fetch_news():
             feed = feedparser.parse(url)
             count = 0
             for entry in feed.entries:
-                if count >= 4:  # 每个源取最新的4条
+                if count >= 4:
                     break
                 
                 published = entry.get('published_parsed') or entry.get('updated_parsed')
@@ -109,54 +109,54 @@ def fetch_news():
 def generate_html(items):
     items_json = json.dumps(items, ensure_ascii=False).replace("</", "<\\/")
 
-    html_content = f"""<!DOCTYPE html>
+    html_template = """<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球实时看板</title>
+    <title>全球官媒、政要推特与财金指数实时看板</title>
     <style>
-        :root {{
+        :root {
             --bg-color: #f4f6f9;
             --card-bg: #ffffff;
             --text-main: #2c3e50;
             --text-muted: #7f8c8d;
             --accent: #3498db;
-        }}
-        body {{
+        }
+        body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
             padding: 20px;
-        }}
-        .container {{ max-width: 850px; margin: 0 auto; }}
-        header {{ text-align: center; margin-bottom: 30px; }}
-        header h1 {{ font-size: 24px; margin-bottom: 8px; color: #1a202c; }}
-        header p {{ color: var(--text-muted); font-size: 14px; }}
-        .news-card {{
+        }
+        .container { max-width: 850px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; }
+        header h1 { font-size: 24px; margin-bottom: 8px; color: #1a202c; }
+        header p { color: var(--text-muted); font-size: 14px; }
+        .news-card {
             background: var(--card-bg);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }}
-        .card-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }}
-        .badge {{ background-color: #ebf8ff; color: #3182ce; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }}
-        .time {{ font-size: 12px; color: var(--text-muted); }}
-        h2 {{ font-size: 18px; margin: 0 0 8px 0; line-height: 1.4; }}
-        h2 a {{ color: #2d3748; text-decoration: none; }}
-        h2 a:hover {{ color: var(--accent); }}
-        .summary {{ font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 12px; }}
-        .read-more {{ font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }}
-        .loading-status {{ text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px; }}
-        footer {{ text-align: center; margin-top: 40px; font-size: 12px; color: var(--text-muted); }}
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .badge { background-color: #ebf8ff; color: #3182ce; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+        .time { font-size: 12px; color: var(--text-muted); }
+        h2 { font-size: 18px; margin: 0 0 8px 0; line-height: 1.4; }
+        h2 a { color: #2d3748; text-decoration: none; }
+        h2 a:hover { color: var(--accent); }
+        .summary { font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 12px; }
+        .read-more { font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }
+        .loading-status { text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px; }
+        footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--text-muted); }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🌐 全球全景看板</h1>
+            <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
             <p>实时聚合官媒、领导人社交动态、美联储与全球股市指数</p>
         </header>
         <div class="news-list" id="news-container"></div>
@@ -165,70 +165,70 @@ def generate_html(items):
     </div>
 
     <script type="application/json" id="news-data">
-    {items_json}
+    __ITEMS_JSON__
     </script>
 
     <script>
         let allData = [];
-        try {{
+        try {
             allData = JSON.parse(document.getElementById('news-data').textContent);
-        }} catch (e) {{
+        } catch (e) {
             console.error("Data parse error:", e);
-        }}
+        }
 
         let currentIndex = 0;
         const pageSize = 10;
         const container = document.getElementById('news-container');
         const loadingIndicator = document.getElementById('loading');
 
-        function loadMore() {{
-            if (currentIndex >= allData.length) {{
+        function loadMore() {
+            if (currentIndex >= allData.length) {
                 loadingIndicator.innerText = "已加载全部资讯";
                 return;
-            }}
+            }
 
             const nextEnd = Math.min(currentIndex + pageSize, allData.length);
             const batch = allData.slice(currentIndex, nextEnd);
             
             let batchHtml = '';
-            batch.forEach((item) => {{
+            batch.forEach((item) => {
                 batchHtml += `
                 <div class="news-card">
                     <div class="card-header">
-                        <span class="badge">${{item.source}}</span>
-                        <span class="time">${{item.time}}</span>
+                        <span class="badge">${item.source}</span>
+                        <span class="time">${item.time}</span>
                     </div>
-                    <h2><a href="${{item.link}}" target="_blank">${{item.title}}</a></h2>
-                    <p class="summary">${{item.summary}}...</p>
-                    <a href="${{item.link}}" target="_blank" class="read-more">阅读原文 &rarr;</a>
+                    <h2><a href="${item.link}" target="_blank">${item.title}</a></h2>
+                    <p class="summary">${item.summary}...</p>
+                    <a href="${item.link}" target="_blank" class="read-more">阅读原文 &rarr;</a>
                 </div>
                 `;
-            }));
+            });
 
             container.insertAdjacentHTML('beforeend', batchHtml);
             currentIndex = nextEnd;
 
-            if (currentIndex >= allData.length) {{
+            if (currentIndex >= allData.length) {
                 loadingIndicator.innerText = "已加载全部资讯";
-            }}
-        }}
+            }
+        }
 
-        window.addEventListener('scroll', () => {{
-            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300) {{
+        window.addEventListener('scroll', () => {
+            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300) {
                 loadMore();
-            }}
-        }});
+            }
+        });
 
         loadMore();
     </script>
 </body>
 </html>
 """
-    return html_content
+    return html_template.replace("__ITEMS_JSON__", items_json)
 
 if __name__ == "__main__":
     items = fetch_news()
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，已成功加入官媒、推特及财金指数源！")
+    print("看板生成成功，语法错误已完全修复！")
