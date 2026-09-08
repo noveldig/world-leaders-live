@@ -1,11 +1,8 @@
 import feedparser
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import json
 import re
-import urllib.request
-import urllib.parse
 
-# 汇聚官媒、领导人推特、美联储、股市指数与非农财金头条的超级源列表
 FEEDS = {
     # 🏛️ 核心官媒与国际组织
     "新华网头条 (Xinhua)": "https://rsshub.app/xinhua/latest",
@@ -41,29 +38,13 @@ FEEDS = {
     "CNN 全球新闻 (CNN World)": "http://rss.cnn.com/rss/cnn_world.rss",
     "半岛电视台 (Al Jazeera)": "https://www.aljazeera.com/xml/rss/all.xml",
     "联合早报 (Lianhe Zaobao)": "https://www.zaobao.com.sg/rss/sea",
-    "朝日新闻 (Asahi Shimbun)": "https://www.asahi.com/rss/asahi/news.rdf"
+    "Asahi Shimbun (朝日新闻)": "https://www.asahi.com/rss/asahi/news.rdf"
 }
-
-def translate_to_zh(text):
-    if not text or re.match(r'^[\u4e00-\u9fa5]+$', text):
-        return text
-    try:
-        encoded_text = urllib.parse.quote(text[:400])
-        url = f"https://api.mymemory.translated.net/get?q={encoded_text}&langpair=en|zh-CN"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=4) as response:
-            data = json.loads(response.read().decode('utf-8'))
-            if data and 'responseData' in data and data['responseData']['translatedText']:
-                translated = data['responseData']['translatedText']
-                if "INVALID KEY" not in translated and "QUOTA" not in translated:
-                    return translated
-    except Exception:
-        pass
-    return text
 
 def fetch_news():
     items = []
     current_year = 2026
+    BEIJING_TZ = timezone(timedelta(hours=8))
     
     for source_name, url in FEEDS.items():
         try:
@@ -76,12 +57,15 @@ def fetch_news():
                 
                 published = entry.get('published_parsed') or entry.get('updated_parsed')
                 if published:
-                    pub_time = datetime(*published[:6])
-                    if pub_time.year < current_year:
+                    # 转换为带 UTC 时 aware 的 datetime，再转为北京时间 (UTC+8)
+                    dt_utc = datetime(*published[:6], tzinfo=timezone.utc)
+                    dt_bj = dt_utc.astimezone(BEIJING_TZ)
+                    
+                    if dt_bj.year < current_year:
                         continue
-                    pub_time_str = pub_time.strftime('%Y-%m-%d %H:%M')
+                    pub_time_str = dt_bj.strftime('%Y-%m-%d %H:%M')
                 else:
-                    pub_time_str = datetime.now().strftime('%Y-%m-%d %H:%M')
+                    pub_time_str = datetime.now(BEIJING_TZ).strftime('%Y-%m-%d %H:%M')
                 
                 title = entry.get('title', 'No Title')
                 link = entry.get('link', '#')
@@ -89,13 +73,10 @@ def fetch_news():
                 summary = entry.get('summary', entry.get('description', ''))
                 summary = re.sub('<[^<]+?>', '', summary)[:150]
 
-                zh_title = translate_to_zh(title)
-                zh_summary = translate_to_zh(summary)
-
                 items.append({
                     "source": source_name,
-                    "title": zh_title,
-                    "summary": zh_summary,
+                    "title": title,
+                    "summary": summary,
                     "link": link,
                     "time": pub_time_str
                 })
@@ -149,6 +130,7 @@ def generate_html(items):
         h2 a:hover { color: var(--accent); }
         .summary { font-size: 14px; color: #4a5568; line-height: 1.6; margin-bottom: 12px; }
         .read-more { font-size: 13px; color: var(--accent); text-decoration: none; font-weight: 500; }
+        .translating-tag { font-size: 11px; color: #e67e22; margin-left: 8px; font-weight: normal; }
         .loading-status { text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px; }
         footer { text-align: center; margin-top: 40px; font-size: 12px; color: var(--text-muted); }
     </style>
@@ -157,11 +139,11 @@ def generate_html(items):
     <div class="container">
         <header>
             <h1>🌐 全球官媒、政要推特与财金非农全景看板</h1>
-            <p>实时聚合官媒、领导人社交动态、美联储与全球股市指数</p>
+            <p>发布时间已同步为北京时间，支持前端异步智能翻译</p>
         </header>
         <div class="news-list" id="news-container"></div>
         <div id="loading" class="loading-status">正在加载更多资讯...</div>
-        <footer><p>Powered by GitHub Actions & Python Engine</p></footer>
+        <footer><p>Powered by GitHub Actions & Async Frontend Translation</p></footer>
     </div>
 
     <script type="application/json" id="news-data">
@@ -181,6 +163,60 @@ def generate_html(items):
         const container = document.getElementById('news-container');
         const loadingIndicator = document.getElementById('loading');
 
+        // 前端多源异步翻译函数（带降级保障）
+        async function translateText(text) {
+            if (!text || /^[\\u4e00-\\u9fa5]+$/.test(text)) return text;
+            
+            // 尝试源 1: MyMemory API
+            try {
+                const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|zh-CN`);
+                const data = await res.json();
+                if (data && data.responseData && data.responseData.translatedText) {
+                    let translated = data.responseData.translatedText;
+                    if (!translated.includes("INVALID KEY") && !translated.includes("QUERY LENGTH")) {
+                        return translated;
+                    }
+                }
+            } catch (e) {}
+
+            // 尝试源 2: LibreTranslate 公共节点备用
+            try {
+                const res = await fetch('https://libretranslate.de/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ q: text, source: 'en', target: 'zh', format: 'text' })
+                });
+                const data = await res.json();
+                if (data && data.translatedText) return data.translatedText;
+            } catch (e) {}
+
+            return text; // 降级返回原文
+        }
+
+        async function processBatchTranslation(cardEl, item) {
+            const titleEl = cardEl.querySelector('.news-title');
+            const summaryEl = cardEl.querySelector('.news-summary');
+            const tagEl = cardEl.querySelector('.translating-tag');
+
+            try {
+                const [transTitle, transSummary] = await Promise.all([
+                    translateText(item.title),
+                    translateText(item.summary)
+                ]);
+
+                if (transTitle !== item.title) {
+                    titleEl.innerText = transTitle;
+                }
+                if (transSummary !== item.summary) {
+                    summaryEl.innerText = transSummary + "...";
+                }
+            } catch (err) {
+                console.error("Translation error:", err);
+            } finally {
+                if (tagEl) tagEl.remove();
+            }
+        }
+
         function loadMore() {
             if (currentIndex >= allData.length) {
                 loadingIndicator.innerText = "已加载全部资讯";
@@ -191,21 +227,32 @@ def generate_html(items):
             const batch = allData.slice(currentIndex, nextEnd);
             
             let batchHtml = '';
-            batch.forEach((item) => {
+            batch.forEach((item, index) => {
+                const globalIdx = currentIndex + index;
                 batchHtml += `
-                <div class="news-card">
+                <div class="news-card" id="card-${globalIdx}">
                     <div class="card-header">
                         <span class="badge">${item.source}</span>
-                        <span class="time">${item.time}</span>
+                        <span class="time">${item.time} (北京时间)</span>
                     </div>
-                    <h2><a href="${item.link}" target="_blank">${item.title}</a></h2>
-                    <p class="summary">${item.summary}...</p>
+                    <h2><a href="${item.link}" target="_blank" class="news-title">${item.title}</a><span class="translating-tag">(翻译中...)</span></h2>
+                    <p class="summary news-summary">${item.summary}</p>
                     <a href="${item.link}" target="_blank" class="read-more">阅读原文 &rarr;</a>
                 </div>
                 `;
             });
 
             container.insertAdjacentHTML('beforeend', batchHtml);
+
+            // 异步触发当前批次的逐条翻译
+            batch.forEach((item, index) => {
+                const globalIdx = currentIndex + index;
+                const cardEl = document.getElementById(`card-${globalIdx}`);
+                if (cardEl) {
+                    processBatchTranslation(cardEl, item);
+                }
+            });
+
             currentIndex = nextEnd;
 
             if (currentIndex >= allData.length) {
@@ -231,4 +278,4 @@ if __name__ == "__main__":
     html_content = generate_html(items)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("看板生成成功，语法错误已完全修复！")
+    print("看板生成成功，已转换为北京时间并启用前端异步翻译！")
